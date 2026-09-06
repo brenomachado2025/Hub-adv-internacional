@@ -1,13 +1,14 @@
-// Compliance Hub - schema de dados
-// SQLite local, sem infraestrutura externa
+// Hub ADV Internacional - schema de dados
+// Postgres (Supabase) em produção e desenvolvimento.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------- Autenticação ----------
