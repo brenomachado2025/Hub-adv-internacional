@@ -25,6 +25,7 @@ model User {
   feeCalculations FeeCalculation[]
   notifications   Notification[]
   auditLogs       AuditLog[]
+  crmClients      CrmClient[]
 }
 
 // ---------- Sanções ----------
@@ -164,4 +165,36 @@ model InvoiceLineItem {
   description String
   quantity    Float   @default(1)
   unitPrice   Float
+}
+
+// ---------- CRM de clientes ----------
+
+model CrmClient {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName       String
+  documentType   String   @default("CPF") // CPF | CNPJ
+  documentNumber String   @default("") // apenas dígitos
+  legalArea      String   @default("Outro")
+  companyName    String   @default("")
+  city           String   @default("")
+  status         String   @default("CONTACTED") // CONTACTED | INITIALIZED | IN_PROGRESS | FINISHED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  statusHistory CrmStatusHistory[]
+
+  @@index([userId])
+  @@index([userId, status])
+}
+
+model CrmStatusHistory {
+  id        String    @id @default(cuid())
+  clientId  String
+  client    CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  status    String
+  changedAt DateTime  @default(now())
+
+  @@index([clientId])
 }

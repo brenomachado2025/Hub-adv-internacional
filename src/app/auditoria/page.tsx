@@ -24,6 +24,7 @@ const MODULE_LABEL: Record<string, string> = {
   honorarios: "Honorários",
   faturas: "Faturas",
   reunioes: "Reuniões",
+  crm: "CRM",
 };
 
 export default function AuditoriaPage() {
@@ -61,7 +62,7 @@ export default function AuditoriaPage() {
       </div>
 
       <div className="flex gap-2">
-        {["", "sancoes", "honorarios", "faturas", "reunioes"].map((m) => (
+        {["", "sancoes", "honorarios", "faturas", "reunioes", "crm"].map((m) => (
           <button
             key={m || "all"}
             onClick={() => setModuleFilter(m)}

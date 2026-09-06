@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const NAV_ITEMS = [
   { href: "/", label: "Painel", icon: "🏠" },
+  { href: "/crm", label: "CRM de Clientes", icon: "📇" },
   { href: "/sancoes", label: "Sanções (ONU/OFAC/UE)", icon: "🛡️" },
   { href: "/notificacoes", label: "Notificações", icon: "📬" },
   { href: "/auditoria", label: "Auditoria", icon: "📋" },
