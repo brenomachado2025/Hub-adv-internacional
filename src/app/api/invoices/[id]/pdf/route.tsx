@@ -1,0 +1,24 @@
+import { NextRequest, NextResponse } from "next/server";
+import { renderToBuffer } from "@react-pdf/renderer";
+import { prisma } from "@/lib/prisma";
+import { InvoiceDocument } from "@/lib/pdf/InvoiceDocument";
+
+export const runtime = "nodejs";
+
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const invoice = await prisma.invoice.findUnique({ where: { id }, include: { items: true } });
+
+  if (!invoice) {
+    return NextResponse.json({ error: "Fatura não encontrada" }, { status: 404 });
+  }
+
+  const buffer = await renderToBuffer(<InvoiceDocument invoice={invoice} />);
+
+  return new NextResponse(new Uint8Array(buffer), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${invoice.number}.pdf"`,
+    },
+  });
+}

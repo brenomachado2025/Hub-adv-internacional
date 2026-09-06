@@ -1,0 +1,144 @@
+// Compliance Hub - schema de dados
+// SQLite local, sem infraestrutura externa
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Autenticação ----------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String   @default("")
+  passwordHash String
+  role         String   @default("ADMIN") // ADMIN | ANALYST
+  createdAt    DateTime @default(now())
+}
+
+// ---------- Sanções ----------
+
+model SanctionEntry {
+  id          String   @id @default(cuid())
+  externalId  String   // id na lista de origem (uid do OFAC, referenceNumber da UE/ONU, etc.)
+  source      String   // "OFAC" | "EU" | "UN"
+  name        String
+  aliases     String   @default("") // separados por "; "
+  entityType  String   @default("") // Individual | Entity | Vessel | ...
+  programs    String   @default("") // programas/jurisdição de sanção, separados por "; "
+  countries   String   @default("") // países associados, separados por "; "
+  listedDate  String   @default("")
+  rawHash     String   // hash do conteúdo normalizado, usado para detectar mudanças
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  active      Boolean  @default(true)
+
+  changeEvents SanctionChangeEvent[]
+
+  @@unique([source, externalId])
+  @@index([name])
+}
+
+model SanctionChangeEvent {
+  id          String   @id @default(cuid())
+  entryId     String?
+  entry       SanctionEntry? @relation(fields: [entryId], references: [id])
+  source      String
+  externalId  String
+  entryName   String
+  changeType  String   // "ADDED" | "REMOVED" | "MODIFIED"
+  details     String   @default("") // descrição legível da mudança de jurisdição/programa
+  createdAt   DateTime @default(now())
+}
+
+model SanctionSyncRun {
+  id           String   @id @default(cuid())
+  source       String
+  status       String   // "SUCCESS" | "ERROR"
+  message      String   @default("")
+  entriesCount Int      @default(0)
+  changesCount Int      @default(0)
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+}
+
+// ---------- Notificações (central estilo e-mail) ----------
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // "SANCTIONS" | "FX" | "INVOICE" | "MEETING" | "SYSTEM"
+  sender    String   @default("Monitor de Compliance")
+  subject   String
+  body      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ---------- Auditoria ----------
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actor        String   @default("analista")
+  action       String   // "SEARCH" | "VIEW" | "EXPORT" | "SYNC"
+  module       String   // "sancoes" | "honorarios" | "faturas" | "reunioes"
+  query        String   @default("")
+  resultSummary String  @default("")
+  createdAt    DateTime @default(now())
+}
+
+// ---------- Honorários / Câmbio ----------
+
+model FeeCalculation {
+  id             String   @id @default(cuid())
+  description    String   @default("")
+  baseAmount     Float
+  baseCurrency   String
+  targetCurrency String
+  rate           Float
+  convertedAmount Float
+  rateDate       String
+  jurisdictionCountry String @default("")
+  jurisdictionState   String @default("")
+  createdAt      DateTime @default(now())
+
+  invoices Invoice[]
+}
+
+// ---------- Faturas ----------
+
+model Invoice {
+  id            String   @id @default(cuid())
+  number        String   @unique
+  issuerName    String
+  issuerTaxId   String   @default("")
+  issuerAddress String   @default("")
+  clientName    String
+  clientTaxId   String   @default("")
+  clientAddress String   @default("")
+  currency      String
+  exchangeRate  Float    @default(1)
+  taxRate       Float    @default(0)
+  notes         String   @default("")
+  status        String   @default("DRAFT") // DRAFT | ISSUED | PAID
+  issueDate     String
+  dueDate       String   @default("")
+  feeCalculationId String?
+  feeCalculation   FeeCalculation? @relation(fields: [feeCalculationId], references: [id])
+  createdAt     DateTime @default(now())
+
+  items InvoiceLineItem[]
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float   @default(1)
+  unitPrice   Float
+}
