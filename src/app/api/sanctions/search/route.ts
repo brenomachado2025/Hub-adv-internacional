@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
     where: {
       active: true,
       OR: [
-        { name: { contains: q } },
-        { aliases: { contains: q } },
+        { name: { contains: q, mode: "insensitive" } },
+        { aliases: { contains: q, mode: "insensitive" } },
       ],
     },
     orderBy: { name: "asc" },
