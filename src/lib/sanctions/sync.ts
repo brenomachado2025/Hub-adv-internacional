@@ -48,6 +48,23 @@ async function runSync(source: "OFAC" | "EU" | "UN") {
     const existing = await prisma.sanctionEntry.findMany({ where: { source } });
     const existingById = new Map(existing.map((e) => [e.externalId, e]));
     const seenIds = new Set<string>();
+    const unchangedIds: string[] = [];
+
+    // Em vez de uma escrita por linha (lento em rede - milhares de round-trips para
+    // fontes grandes), agrupamos as operações e as enviamos em lote ao final.
+    const toCreate: {
+      externalId: string;
+      name: string;
+      aliases: string;
+      entityType: string;
+      programs: string;
+      countries: string;
+      listedDate: string;
+      rawHash: string;
+    }[] = [];
+    const addedChangeEvents: { externalId: string; entryName: string; details: string }[] = [];
+    const toUpdateModified: { id: string; data: Record<string, unknown> }[] = [];
+    const modifiedChangeEvents: { entryId: string; externalId: string; entryName: string; details: string }[] = [];
 
     for (const entry of entries) {
       seenIds.add(entry.externalId);
@@ -55,27 +72,20 @@ async function runSync(source: "OFAC" | "EU" | "UN") {
       const prev = existingById.get(entry.externalId);
 
       if (!prev) {
-        await prisma.sanctionEntry.create({
-          data: {
-            externalId: entry.externalId,
-            source,
-            name: entry.name,
-            aliases: entry.aliases.join("; "),
-            entityType: entry.entityType,
-            programs: entry.programs.join("; "),
-            countries: entry.countries.join("; "),
-            listedDate: entry.listedDate,
-            rawHash: hash,
-          },
+        toCreate.push({
+          externalId: entry.externalId,
+          name: entry.name,
+          aliases: entry.aliases.join("; "),
+          entityType: entry.entityType,
+          programs: entry.programs.join("; "),
+          countries: entry.countries.join("; "),
+          listedDate: entry.listedDate,
+          rawHash: hash,
         });
-        await prisma.sanctionChangeEvent.create({
-          data: {
-            source,
-            externalId: entry.externalId,
-            entryName: entry.name,
-            changeType: "ADDED",
-            details: `Nova entrada na lista ${source}. Programas/jurisdição: ${entry.programs.join(", ") || "-"}`,
-          },
+        addedChangeEvents.push({
+          externalId: entry.externalId,
+          entryName: entry.name,
+          details: `Nova entrada na lista ${source}. Programas/jurisdição: ${entry.programs.join(", ") || "-"}`,
         });
         changesCount++;
       } else if (prev.rawHash !== hash) {
@@ -92,8 +102,8 @@ async function runSync(source: "OFAC" | "EU" | "UN") {
         }
         if (changedFields.length === 0) changedFields.push("dados cadastrais atualizados");
 
-        await prisma.sanctionEntry.update({
-          where: { id: prev.id },
+        toUpdateModified.push({
+          id: prev.id,
           data: {
             name: entry.name,
             aliases: entry.aliases.join("; "),
@@ -106,41 +116,74 @@ async function runSync(source: "OFAC" | "EU" | "UN") {
             active: true,
           },
         });
-        await prisma.sanctionChangeEvent.create({
-          data: {
-            entryId: prev.id,
-            source,
-            externalId: entry.externalId,
-            entryName: entry.name,
-            changeType: "MODIFIED",
-            details: changedFields.join(" | "),
-          },
+        modifiedChangeEvents.push({
+          entryId: prev.id,
+          externalId: entry.externalId,
+          entryName: entry.name,
+          details: changedFields.join(" | "),
         });
         changesCount++;
       } else {
-        await prisma.sanctionEntry.update({
-          where: { id: prev.id },
-          data: { lastSeenAt: new Date() },
-        });
+        unchangedIds.push(prev.id);
       }
     }
 
+    if (toCreate.length > 0) {
+      await prisma.sanctionEntry.createMany({
+        data: toCreate.map((e) => ({ ...e, source })),
+      });
+      await prisma.sanctionChangeEvent.createMany({
+        data: addedChangeEvents.map((e) => ({
+          source,
+          externalId: e.externalId,
+          entryName: e.entryName,
+          changeType: "ADDED",
+          details: e.details,
+        })),
+      });
+    }
+
+    if (unchangedIds.length > 0) {
+      await prisma.sanctionEntry.updateMany({
+        where: { id: { in: unchangedIds } },
+        data: { lastSeenAt: new Date() },
+      });
+    }
+
+    if (toUpdateModified.length > 0) {
+      await prisma.$transaction(
+        toUpdateModified.map((u) => prisma.sanctionEntry.update({ where: { id: u.id }, data: u.data }))
+      );
+      await prisma.sanctionChangeEvent.createMany({
+        data: modifiedChangeEvents.map((e) => ({
+          entryId: e.entryId,
+          source,
+          externalId: e.externalId,
+          entryName: e.entryName,
+          changeType: "MODIFIED",
+          details: e.details,
+        })),
+      });
+    }
+
     // Entradas que saíram da lista (removidas/deslistadas)
-    for (const prev of existing) {
-      if (!seenIds.has(prev.externalId) && prev.active) {
-        await prisma.sanctionEntry.update({ where: { id: prev.id }, data: { active: false } });
-        await prisma.sanctionChangeEvent.create({
-          data: {
-            entryId: prev.id,
-            source,
-            externalId: prev.externalId,
-            entryName: prev.name,
-            changeType: "REMOVED",
-            details: `Entrada removida/deslistada da lista ${source}`,
-          },
-        });
-        changesCount++;
-      }
+    const removed = existing.filter((prev) => !seenIds.has(prev.externalId) && prev.active);
+    if (removed.length > 0) {
+      await prisma.sanctionEntry.updateMany({
+        where: { id: { in: removed.map((r) => r.id) } },
+        data: { active: false },
+      });
+      await prisma.sanctionChangeEvent.createMany({
+        data: removed.map((prev) => ({
+          entryId: prev.id,
+          source,
+          externalId: prev.externalId,
+          entryName: prev.name,
+          changeType: "REMOVED",
+          details: `Entrada removida/deslistada da lista ${source}`,
+        })),
+      });
+      changesCount += removed.length;
     }
 
     if (changesCount > 0) {
