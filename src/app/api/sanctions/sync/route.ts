@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { syncAllSources } from "@/lib/sanctions/sync";
-import { getActorLabel } from "@/lib/auth/current-user";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function POST() {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
   const results = await syncAllSources();
 
   await prisma.auditLog.create({
     data: {
-      actor: await getActorLabel(),
+      userId: user.userId,
+      actor: user.email,
       action: "SYNC",
       module: "sancoes",
       resultSummary: results

@@ -2,33 +2,39 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
-export function LoginForm() {
+export function SignupForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/";
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    if (password !== confirmPassword) {
+      setError("As senhas não conferem");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error ?? "Falha ao entrar");
+        throw new Error(data.error ?? "Falha ao criar conta");
       }
-      router.push(next);
+      router.push("/");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
@@ -43,8 +49,21 @@ export function LoginForm() {
       className="w-full max-w-sm rounded-lg border border-neutral-200 dark:border-neutral-800 p-6 space-y-4 bg-white dark:bg-neutral-900"
     >
       <div>
-        <h1 className="text-lg font-bold">Hub ADV Internacional</h1>
-        <p className="text-xs text-neutral-500 mt-1">Acesso restrito — entre com suas credenciais.</p>
+        <h1 className="text-lg font-bold">Criar conta</h1>
+        <p className="text-xs text-neutral-500 mt-1">
+          Hub ADV Internacional — sua área é individual, seus dados não são compartilhados com outras contas.
+        </p>
+      </div>
+
+      <div>
+        <label className="text-xs text-neutral-500">Nome</label>
+        <input
+          required
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+        />
       </div>
 
       <div>
@@ -52,7 +71,6 @@ export function LoginForm() {
         <input
           type="email"
           required
-          autoFocus
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
@@ -60,12 +78,24 @@ export function LoginForm() {
       </div>
 
       <div>
-        <label className="text-xs text-neutral-500">Senha</label>
+        <label className="text-xs text-neutral-500">Senha (mínimo 8 caracteres)</label>
         <input
           type="password"
           required
+          minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="text-xs text-neutral-500">Confirmar senha</label>
+        <input
+          type="password"
+          required
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
           className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
         />
       </div>
@@ -77,13 +107,13 @@ export function LoginForm() {
         disabled={loading}
         className="w-full px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium disabled:opacity-50"
       >
-        {loading ? "Entrando..." : "Entrar"}
+        {loading ? "Criando conta..." : "Criar conta"}
       </button>
 
       <p className="text-xs text-center text-neutral-500">
-        Ainda não tem conta?{" "}
-        <Link href="/signup" className="text-blue-600">
-          Criar conta
+        Já tem conta?{" "}
+        <Link href="/login" className="text-blue-600">
+          Entrar
         </Link>
       </p>
     </form>

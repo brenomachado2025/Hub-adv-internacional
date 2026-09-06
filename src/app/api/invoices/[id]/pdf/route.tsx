@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/prisma";
 import { InvoiceDocument } from "@/lib/pdf/InvoiceDocument";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 export const runtime = "nodejs";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
   const { id } = await params;
   const invoice = await prisma.invoice.findUnique({ where: { id }, include: { items: true } });
 
-  if (!invoice) {
+  if (!invoice || invoice.userId !== user.userId) {
     return NextResponse.json({ error: "Fatura não encontrada" }, { status: 404 });
   }
 

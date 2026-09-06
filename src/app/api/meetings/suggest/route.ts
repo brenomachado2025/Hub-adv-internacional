@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
-import { getActorLabel } from "@/lib/auth/current-user";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 type SuggestRequest = {
   date: string; // YYYY-MM-DD, referência (fuso de quem está agendando é irrelevante; usamos UTC como grade)
@@ -11,6 +11,9 @@ type SuggestRequest = {
 };
 
 export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
   const body = (await req.json()) as SuggestRequest;
   const { date, timezones, businessStart = 9, businessEnd = 18 } = body;
 
@@ -59,7 +62,8 @@ export async function POST(req: NextRequest) {
 
   await prisma.auditLog.create({
     data: {
-      actor: await getActorLabel(),
+      userId: user.userId,
+      actor: user.email,
       action: "VIEW",
       module: "reunioes",
       query: `${timezones.join(", ")} em ${date}`,

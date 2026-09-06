@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 function csvEscape(value: string): string {
   if (/[",\n]/.test(value)) {
@@ -9,7 +10,13 @@ function csvEscape(value: string): string {
 }
 
 export async function GET() {
-  const logs = await prisma.auditLog.findMany({ orderBy: { createdAt: "desc" } });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
+  const logs = await prisma.auditLog.findMany({
+    where: { OR: [{ userId: user.userId }, { userId: null }] },
+    orderBy: { createdAt: "desc" },
+  });
 
   const header = ["data", "ator", "acao", "modulo", "consulta", "resumo_resultado"];
   const rows = logs.map((l) =>

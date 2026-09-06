@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getActorLabel } from "@/lib/auth/current-user";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function GET(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
 
   if (!q) {
@@ -23,7 +26,8 @@ export async function GET(req: NextRequest) {
 
   await prisma.auditLog.create({
     data: {
-      actor: await getActorLabel(),
+      userId: user.userId,
+      actor: user.email,
       action: "SEARCH",
       module: "sancoes",
       query: q,

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getExchangeRate } from "@/lib/fx";
-import { getActorLabel } from "@/lib/auth/current-user";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
   const calculations = await prisma.feeCalculation.findMany({
+    where: { userId: user.userId },
     orderBy: { createdAt: "desc" },
     take: 200,
   });
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
   const body = await req.json();
   const {
     description,
@@ -41,6 +48,7 @@ export async function POST(req: NextRequest) {
 
   const calculation = await prisma.feeCalculation.create({
     data: {
+      userId: user.userId,
       description: description ?? "",
       baseAmount,
       baseCurrency,
@@ -55,7 +63,8 @@ export async function POST(req: NextRequest) {
 
   await prisma.auditLog.create({
     data: {
-      actor: await getActorLabel(),
+      userId: user.userId,
+      actor: user.email,
       action: "VIEW",
       module: "honorarios",
       query: `${baseAmount} ${baseCurrency} -> ${targetCurrency}`,

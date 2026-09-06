@@ -1,25 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getActorLabel } from "@/lib/auth/current-user";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
   const invoices = await prisma.invoice.findMany({
+    where: { userId: user.userId },
     orderBy: { createdAt: "desc" },
     include: { items: true },
   });
   return NextResponse.json({ invoices });
 }
 
-async function generateInvoiceNumber(): Promise<string> {
+async function generateInvoiceNumber(userId: string): Promise<string> {
   const year = new Date().getFullYear();
   const count = await prisma.invoice.count({
-    where: { number: { startsWith: `INV-${year}-` } },
+    where: { userId, number: { startsWith: `INV-${year}-` } },
   });
   const seq = String(count + 1).padStart(4, "0");
   return `INV-${year}-${seq}`;
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
   const body = await req.json();
   const {
     issuerName,
@@ -60,10 +67,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const number = await generateInvoiceNumber();
+  // Se um cálculo de honorário foi referenciado, garante que pertence a este usuário.
+  let linkedFeeCalculationId: string | null = null;
+  if (feeCalculationId) {
+    const calc = await prisma.feeCalculation.findUnique({ where: { id: feeCalculationId } });
+    if (calc && calc.userId === user.userId) {
+      linkedFeeCalculationId = calc.id;
+    }
+  }
+
+  const number = await generateInvoiceNumber(user.userId);
 
   const invoice = await prisma.invoice.create({
     data: {
+      userId: user.userId,
       number,
       issuerName,
       issuerTaxId: issuerTaxId ?? "",
@@ -77,7 +94,7 @@ export async function POST(req: NextRequest) {
       notes: notes ?? "",
       issueDate,
       dueDate: dueDate ?? "",
-      feeCalculationId: feeCalculationId || null,
+      feeCalculationId: linkedFeeCalculationId,
       status: "ISSUED",
       items: {
         create: items.map((it) => ({
@@ -92,6 +109,7 @@ export async function POST(req: NextRequest) {
 
   await prisma.notification.create({
     data: {
+      userId: user.userId,
       type: "INVOICE",
       sender: "Faturamento",
       subject: `Fatura ${invoice.number} emitida`,
@@ -103,7 +121,8 @@ export async function POST(req: NextRequest) {
 
   await prisma.auditLog.create({
     data: {
-      actor: await getActorLabel(),
+      userId: user.userId,
+      actor: user.email,
       action: "EXPORT",
       module: "faturas",
       query: invoice.number,

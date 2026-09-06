@@ -144,14 +144,20 @@ async function runSync(source: "OFAC" | "EU" | "UN") {
     }
 
     if (changesCount > 0) {
-      await prisma.notification.create({
-        data: {
-          type: "SANCTIONS",
-          sender: "Monitor de Sanções",
-          subject: `${changesCount} mudança(s) detectada(s) na lista ${source}`,
-          body: `A sincronização da lista de sanções ${source} identificou ${changesCount} mudança(s) (inclusões, remoções ou alterações de jurisdição/programa). Consulte o histórico de sanções para detalhes completos.`,
-        },
-      });
+      // Alerta de sanções é relevante para todo mundo que usa o hub - distribui uma cópia
+      // da notificação para cada conta existente.
+      const allUsers = await prisma.user.findMany({ select: { id: true } });
+      if (allUsers.length > 0) {
+        await prisma.notification.createMany({
+          data: allUsers.map((u) => ({
+            userId: u.id,
+            type: "SANCTIONS",
+            sender: "Monitor de Sanções",
+            subject: `${changesCount} mudança(s) detectada(s) na lista ${source}`,
+            body: `A sincronização da lista de sanções ${source} identificou ${changesCount} mudança(s) (inclusões, remoções ou alterações de jurisdição/programa). Consulte o histórico de sanções para detalhes completos.`,
+          })),
+        });
+      }
     }
 
     await prisma.sanctionSyncRun.create({

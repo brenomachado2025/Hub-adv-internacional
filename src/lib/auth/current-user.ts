@@ -7,9 +7,3 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
   if (!token) return null;
   return verifySessionToken(token);
 }
-
-/** Retorna o identificador do ator para uso em AuditLog/registros — nunca lança. */
-export async function getActorLabel(): Promise<string> {
-  const user = await getCurrentUser();
-  return user?.email ?? "desconhecido";
-}

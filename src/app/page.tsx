@@ -1,25 +1,32 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
   const [activeSanctions, unreadNotifications, recentChanges, invoiceCount, lastSync] = await Promise.all([
     prisma.sanctionEntry.count({ where: { active: true } }),
-    prisma.notification.count({ where: { isRead: false } }),
+    prisma.notification.count({ where: { userId: user.userId, isRead: false } }),
     prisma.sanctionChangeEvent.count({
       where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
     }),
-    prisma.invoice.count(),
+    prisma.invoice.count({ where: { userId: user.userId } }),
     prisma.sanctionSyncRun.findFirst({ orderBy: { startedAt: "desc" } }),
   ]);
 
   const recentInvoices = await prisma.invoice.findMany({
+    where: { userId: user.userId },
     orderBy: { createdAt: "desc" },
     take: 5,
   });
 
   const recentNotifications = await prisma.notification.findMany({
+    where: { userId: user.userId },
     orderBy: { createdAt: "desc" },
     take: 5,
   });

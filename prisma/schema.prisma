@@ -18,8 +18,13 @@ model User {
   email        String   @unique
   name         String   @default("")
   passwordHash String
-  role         String   @default("ADMIN") // ADMIN | ANALYST
+  role         String   @default("CLIENT") // ADMIN | CLIENT
   createdAt    DateTime @default(now())
+
+  invoices        Invoice[]
+  feeCalculations FeeCalculation[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
 }
 
 // ---------- Sanções ----------
@@ -72,30 +77,40 @@ model SanctionSyncRun {
 
 model Notification {
   id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String   // "SANCTIONS" | "FX" | "INVOICE" | "MEETING" | "SYSTEM"
   sender    String   @default("Monitor de Compliance")
   subject   String
   body      String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ---------- Auditoria ----------
 
 model AuditLog {
   id           String   @id @default(cuid())
+  userId       String?  // null = ação de sistema (ex.: sincronização automática em segundo plano)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   actor        String   @default("analista")
   action       String   // "SEARCH" | "VIEW" | "EXPORT" | "SYNC"
   module       String   // "sancoes" | "honorarios" | "faturas" | "reunioes"
   query        String   @default("")
   resultSummary String  @default("")
   createdAt    DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ---------- Honorários / Câmbio ----------
 
 model FeeCalculation {
   id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   description    String   @default("")
   baseAmount     Float
   baseCurrency   String
@@ -108,13 +123,17 @@ model FeeCalculation {
   createdAt      DateTime @default(now())
 
   invoices Invoice[]
+
+  @@index([userId])
 }
 
 // ---------- Faturas ----------
 
 model Invoice {
   id            String   @id @default(cuid())
-  number        String   @unique
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  number        String
   issuerName    String
   issuerTaxId   String   @default("")
   issuerAddress String   @default("")
@@ -133,6 +152,9 @@ model Invoice {
   createdAt     DateTime @default(now())
 
   items InvoiceLineItem[]
+
+  @@unique([userId, number])
+  @@index([userId])
 }
 
 model InvoiceLineItem {
