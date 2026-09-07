@@ -11,7 +11,8 @@ export function Greeting() {
       .then((data) => {
         const user = data.user;
         if (!user) return;
-        const firstName = (user.name || user.email).trim().split(/\s+/)[0];
+        const rawFirstName = (user.name || user.email).trim().split(/\s+/)[0];
+        const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
         setLabel(user.title ? `${user.title} ${firstName}` : firstName);
       });
   }, []);
