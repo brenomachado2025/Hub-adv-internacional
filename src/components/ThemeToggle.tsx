@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
 
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
@@ -32,15 +33,15 @@ export function ThemeToggle() {
       onClick={toggle}
       role="switch"
       aria-checked={isDark}
-      className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-900 transition-colors"
+      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
     >
-      <span className="flex items-center gap-2">
-        <span aria-hidden>{isDark ? "🌙" : "☀️"}</span>
+      <span className="flex items-center gap-3">
+        {isDark ? <Moon size={18} strokeWidth={1.75} /> : <Sun size={18} strokeWidth={1.75} />}
         {isDark ? "Modo escuro" : "Modo claro"}
       </span>
       <span
         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-          isDark ? "bg-slate-700" : "bg-neutral-300"
+          isDark ? "bg-blue-600" : "bg-white/20"
         }`}
       >
         <span
