@@ -1,0 +1,22 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+export function Greeting() {
+  const [label, setLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        const user = data.user;
+        if (!user) return;
+        const firstName = (user.name || user.email).trim().split(/\s+/)[0];
+        setLabel(user.title ? `${user.title} ${firstName}` : firstName);
+      });
+  }, []);
+
+  if (!label) return null;
+
+  return <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{label}</span>;
+}

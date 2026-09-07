@@ -9,6 +9,7 @@ export function SignupForm() {
   const router = useRouter();
 
   const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,7 +30,7 @@ export function SignupForm() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, title, email, password }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -59,15 +60,29 @@ export function SignupForm() {
         </div>
       </div>
 
-      <div>
-        <label className="text-xs text-neutral-500">Nome</label>
-        <input
-          required
-          autoFocus
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
-        />
+      <div className="grid grid-cols-3 gap-2">
+        <div className="col-span-2">
+          <label className="text-xs text-neutral-500">Nome</label>
+          <input
+            required
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-neutral-500">Tratamento</label>
+          <select
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+          >
+            <option value="">—</option>
+            <option value="Sr.">Sr.</option>
+            <option value="Sra.">Sra.</option>
+          </select>
+        </div>
       </div>
 
       <div>

@@ -17,6 +17,7 @@ export type SessionPayload = {
   userId: string;
   email: string;
   name: string;
+  title: string;
   role: string;
 };
 
@@ -41,6 +42,7 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
         userId: payload.userId,
         email: payload.email,
         name: payload.name,
+        title: typeof payload.title === "string" ? payload.title : "",
         role: payload.role,
       };
     }

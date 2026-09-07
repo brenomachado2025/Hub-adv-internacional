@@ -4,12 +4,14 @@ import { hashPassword } from "@/lib/auth/password";
 import { createSessionToken, COOKIE_NAME, SESSION_DURATION_SECONDS } from "@/lib/auth/session";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const VALID_TITLES = ["Sr.", "Sra.", ""];
 
 export async function POST(req: NextRequest) {
-  const { email, password, name } = (await req.json()) as {
+  const { email, password, name, title } = (await req.json()) as {
     email?: string;
     password?: string;
     name?: string;
+    title?: string;
   };
 
   const normalizedEmail = email?.trim().toLowerCase();
@@ -26,11 +28,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Já existe uma conta com esse e-mail" }, { status: 409 });
   }
 
+  const resolvedTitle = VALID_TITLES.includes(title ?? "") ? (title as string) : "";
+
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
     data: {
       email: normalizedEmail,
       name: name?.trim() || normalizedEmail.split("@")[0],
+      title: resolvedTitle,
       passwordHash,
       role: "CLIENT",
     },
@@ -40,10 +45,14 @@ export async function POST(req: NextRequest) {
     userId: user.id,
     email: user.email,
     name: user.name,
+    title: user.title,
     role: user.role,
   });
 
-  const res = NextResponse.json({ ok: true, user: { email: user.email, name: user.name, role: user.role } });
+  const res = NextResponse.json({
+    ok: true,
+    user: { email: user.email, name: user.name, title: user.title, role: user.role },
+  });
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

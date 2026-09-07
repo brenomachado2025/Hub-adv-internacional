@@ -24,10 +24,14 @@ export async function POST(req: NextRequest) {
     userId: user.id,
     email: user.email,
     name: user.name || user.email,
+    title: user.title,
     role: user.role,
   });
 
-  const res = NextResponse.json({ ok: true, user: { email: user.email, name: user.name, role: user.role } });
+  const res = NextResponse.json({
+    ok: true,
+    user: { email: user.email, name: user.name, title: user.title, role: user.role },
+  });
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

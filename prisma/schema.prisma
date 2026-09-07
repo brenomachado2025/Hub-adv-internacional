@@ -17,6 +17,7 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   name         String   @default("")
+  title        String   @default("") // "Sr." | "Sra." | "" (tratamento exibido no topo do app)
   passwordHash String
   role         String   @default("CLIENT") // ADMIN | CLIENT
   createdAt    DateTime @default(now())

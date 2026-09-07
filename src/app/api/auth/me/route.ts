@@ -4,5 +4,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ user: null }, { status: 200 });
-  return NextResponse.json({ user: { email: user.email, name: user.name, role: user.role } });
+  return NextResponse.json({
+    user: { email: user.email, name: user.name, title: user.title, role: user.role },
+  });
 }
