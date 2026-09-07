@@ -11,7 +11,7 @@ export async function register() {
 
   const runSync = () => {
     syncAllSources().catch((err) => {
-      console.error("[hub-adv-internacional] Falha na sincronização periódica de sanções:", err);
+      console.error("[internacional-hub] Falha na sincronização periódica de sanções:", err);
     });
   };
 

@@ -130,7 +130,7 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceWithItems }) {
         ) : null}
 
         <Text style={styles.footer}>
-          Documento gerado pelo Hub ADV Internacional — formato compatível com uso internacional (nº único, partes
+          Documento gerado pelo Internacional Hub — formato compatível com uso internacional (nº único, partes
           identificadas, itens discriminados, moeda e impostos explícitos).
         </Text>
       </Page>

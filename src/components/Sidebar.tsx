@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -15,9 +16,12 @@ const NAV_ITEMS = [
 export function Sidebar() {
   return (
     <aside className="w-64 shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 min-h-screen flex flex-col">
-      <div className="px-5 py-6 border-b border-neutral-200 dark:border-neutral-800">
-        <h1 className="text-lg font-bold leading-tight">Hub ADV Internacional</h1>
-        <p className="text-xs text-neutral-500 mt-1">Sanções internacionais & due diligence</p>
+      <div className="px-5 py-5 border-b border-neutral-200 dark:border-neutral-800 flex flex-col items-center text-center gap-2">
+        <Image src="/logo.png" alt="Internacional Hub" width={56} height={56} />
+        <div>
+          <h1 className="text-base font-bold leading-tight">INTERNACIONAL HUB</h1>
+          <p className="text-xs text-neutral-500 mt-1">Sanções internacionais & due diligence</p>
+        </div>
       </div>
       <nav className="flex-1 p-3 space-y-1">
         {NAV_ITEMS.map((item) => (

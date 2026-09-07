@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -48,11 +49,14 @@ export function SignupForm() {
       onSubmit={submit}
       className="w-full max-w-sm rounded-lg border border-neutral-200 dark:border-neutral-800 p-6 space-y-4 bg-white dark:bg-neutral-900"
     >
-      <div>
-        <h1 className="text-lg font-bold">Criar conta</h1>
-        <p className="text-xs text-neutral-500 mt-1">
-          Hub ADV Internacional — sua área é individual, seus dados não são compartilhados com outras contas.
-        </p>
+      <div className="flex items-center gap-3">
+        <Image src="/logo.png" alt="Internacional Hub" width={48} height={48} />
+        <div>
+          <h1 className="text-lg font-bold">Criar conta</h1>
+          <p className="text-xs text-neutral-500 mt-1">
+            INTERNACIONAL HUB — sua área é individual, seus dados não são compartilhados com outras contas.
+          </p>
+        </div>
       </div>
 
       <div>

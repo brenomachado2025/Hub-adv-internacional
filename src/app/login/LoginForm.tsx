@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -42,9 +43,12 @@ export function LoginForm() {
       onSubmit={submit}
       className="w-full max-w-sm rounded-lg border border-neutral-200 dark:border-neutral-800 p-6 space-y-4 bg-white dark:bg-neutral-900"
     >
-      <div>
-        <h1 className="text-lg font-bold">Hub ADV Internacional</h1>
-        <p className="text-xs text-neutral-500 mt-1">Acesso restrito — entre com suas credenciais.</p>
+      <div className="flex items-center gap-3">
+        <Image src="/logo.png" alt="Internacional Hub" width={48} height={48} />
+        <div>
+          <h1 className="text-lg font-bold tracking-wide">INTERNACIONAL HUB</h1>
+          <p className="text-xs text-neutral-500 mt-1">Acesso restrito — entre com suas credenciais.</p>
+        </div>
       </div>
 
       <div>
