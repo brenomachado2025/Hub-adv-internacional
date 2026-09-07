@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV_ITEMS = [
   { href: "/", label: "Painel", icon: "🏠" },
@@ -13,12 +14,12 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   return (
-    <aside className="w-64 shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 min-h-screen">
+    <aside className="w-64 shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 min-h-screen flex flex-col">
       <div className="px-5 py-6 border-b border-neutral-200 dark:border-neutral-800">
         <h1 className="text-lg font-bold leading-tight">Hub ADV Internacional</h1>
         <p className="text-xs text-neutral-500 mt-1">Sanções internacionais & due diligence</p>
       </div>
-      <nav className="p-3 space-y-1">
+      <nav className="flex-1 p-3 space-y-1">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
@@ -30,6 +31,9 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
+      <div className="p-3 border-t border-neutral-200 dark:border-neutral-800">
+        <ThemeToggle />
+      </div>
     </aside>
   );
 }
