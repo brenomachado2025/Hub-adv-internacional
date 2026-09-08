@@ -16,6 +16,7 @@ export function TeamPanel() {
   const [email, setEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
+  const [inviteInfo, setInviteInfo] = useState("");
   const [code, setCode] = useState("");
   const [acceptError, setAcceptError] = useState("");
   const [acceptOk, setAcceptOk] = useState(false);
@@ -35,6 +36,7 @@ export function TeamPanel() {
   const invite = async () => {
     setInviting(true);
     setInviteError("");
+    setInviteInfo("");
     const res = await fetch("/api/team/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -44,6 +46,11 @@ export function TeamPanel() {
     if (!res.ok) {
       setInviteError(json.error ?? "Não foi possível convidar.");
     } else {
+      setInviteInfo(
+        json.notified
+          ? "Convite enviado — a pessoa já foi notificada dentro do Hub."
+          : "Convite criado. Essa pessoa ainda não tem conta no Hub: envie o código a ela por fora (WhatsApp, e-mail etc.) ou peça para se cadastrar com esse e-mail — ao entrar, ela verá o convite na Central de Notificações."
+      );
       setEmail("");
       load();
     }
@@ -120,6 +127,7 @@ export function TeamPanel() {
             </button>
           </div>
           {inviteError && <p className="text-xs text-red-600">{inviteError}</p>}
+          {inviteInfo && <p className="text-xs text-emerald-600">{inviteInfo}</p>}
 
           {data.invites.length > 0 && (
             <div className="pt-2">

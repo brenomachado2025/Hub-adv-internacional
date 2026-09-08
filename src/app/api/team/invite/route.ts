@@ -34,5 +34,21 @@ export async function POST(req: NextRequest) {
     data: { teamId: team.id, email: normalizedEmail, code: generateInviteCode() },
   });
 
-  return NextResponse.json({ invite });
+  const invitedUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (invitedUser) {
+    const owner = await prisma.user.findUnique({ where: { id: session.userId } });
+    await prisma.notification.create({
+      data: {
+        userId: invitedUser.id,
+        type: "SYSTEM",
+        sender: "Equipe",
+        subject: `Convite para a equipe de ${owner?.name || owner?.email}`,
+        body: `Você foi convidado para compartilhar a conta de ${
+          owner?.name || owner?.email
+        } no Internacional Hub. Para aceitar, acesse Configurações → Equipes e informe o código: ${invite.code}`,
+      },
+    });
+  }
+
+  return NextResponse.json({ invite, notified: !!invitedUser });
 }

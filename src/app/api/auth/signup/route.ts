@@ -41,6 +41,24 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  const pendingInvite = await prisma.teamInvite.findFirst({
+    where: { email: normalizedEmail, status: "PENDING" },
+    include: { team: { include: { owner: true } } },
+  });
+  if (pendingInvite) {
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        type: "SYSTEM",
+        sender: "Equipe",
+        subject: `Convite para a equipe de ${pendingInvite.team.owner.name || pendingInvite.team.owner.email}`,
+        body: `Você foi convidado para compartilhar a conta de ${
+          pendingInvite.team.owner.name || pendingInvite.team.owner.email
+        } no Internacional Hub. Para aceitar, acesse Configurações → Equipes e informe o código: ${pendingInvite.code}`,
+      },
+    });
+  }
+
   const token = await createSessionToken({
     userId: user.id,
     email: user.email,
