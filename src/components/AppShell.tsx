@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Greeting } from "@/components/Greeting";
+import { SupportChat } from "@/components/SupportChat";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -22,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
         <main className="flex-1 p-6 max-w-6xl w-full mx-auto">{children}</main>
       </div>
+      <SupportChat />
     </div>
   );
 }
