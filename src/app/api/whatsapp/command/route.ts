@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
   const { type } = (await req.json()) as { type?: string };
-  if (type !== "DISCONNECT") {
+  if (type !== "DISCONNECT" && type !== "NEW_QR") {
     return NextResponse.json({ error: "Comando inválido" }, { status: 400 });
   }
 

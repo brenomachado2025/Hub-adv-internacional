@@ -30,6 +30,7 @@ model User {
   whatsappSession WhatsappSession?
   whatsappMessages WhatsappMessage[]
   whatsappStatusNotifications WhatsappStatusNotification[]
+  whatsappFunnelMessages WhatsappFunnelMessage[]
 }
 
 // ---------- Sanções ----------
@@ -230,6 +231,8 @@ model WhatsappMessage {
   phone        String
   direction    String    // IN | OUT
   body         String
+  source       String    @default("BOT") // BOT | AGENT | CLIENT (quem originou uma msg OUT, ou CLIENT p/ IN)
+  audioUrl     String    @default("") // se preenchido, mensagem de áudio (ElevenLabs) em vez de texto
   status       String    @default("RECEIVED") // RECEIVED | QUEUED | SENT | FAILED
   scheduledFor DateTime?
   sentAt       DateTime?
@@ -256,11 +259,25 @@ model WhatsappConversationState {
 model WhatsappCommand {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // DISCONNECT | RECONNECT
+  type      String   // DISCONNECT | NEW_QR
   status    String   @default("PENDING") // PENDING | DONE
   createdAt DateTime @default(now())
 
   @@index([userId, status])
+}
+
+// Textos do funil de atendimento automático - editáveis pelo usuário. Chaves usadas
+// pelo worker (com um texto padrão de fallback caso a conta não tenha customizado):
+// WELCOME_MENU, MENU_INVALID, HANDOFF_ACOMPANHAR, HANDOFF_ADVOGADO, HANDOFF_ATTEMPTS,
+// COLLECT_NAME, COLLECT_AREA, COLLECT_CITY, DONE.
+model WhatsappFunnelMessage {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key    String
+  text   String
+
+  @@unique([userId, key])
 }
 
 model WhatsappErrorLog {

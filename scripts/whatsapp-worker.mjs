@@ -21,6 +21,29 @@ import {
 
 const prisma = new PrismaClient();
 
+// Mantido em sincronia manualmente com src/lib/data/whatsapp-funnel.ts (usado pela
+// tela de configuração do funil). O worker roda com node puro, sem TypeScript.
+const DEFAULT_FUNNEL_MESSAGES = {
+  WELCOME_MENU:
+    "Olá! 👋 Bem-vindo(a). Sou o assistente virtual e posso te ajudar a dar o primeiro passo. Escolha uma opção:\n\n" +
+    "1 - Falar sobre um novo caso\n" +
+    "2 - Acompanhar processo em andamento\n" +
+    "3 - Falar com um advogado",
+  MENU_INVALID:
+    "Desculpe, não entendi. Responda com o número da opção:\n\n" +
+    "1 - Falar sobre um novo caso\n" +
+    "2 - Acompanhar processo em andamento\n" +
+    "3 - Falar com um advogado",
+  HANDOFF_ACOMPANHAR: "Certo! Vou avisar um de nossos advogados para te passar uma atualização. Só um momento. 🙏",
+  HANDOFF_ADVOGADO: "Combinado! Um de nossos advogados vai te atender em breve por aqui.",
+  HANDOFF_ATTEMPTS: "Vou te encaminhar para um de nossos advogados para não perder tempo. Só um momento. 🙏",
+  COLLECT_NAME: "Perfeito! Para começar, qual é o seu nome completo?",
+  COLLECT_AREA:
+    "Qual a área jurídica do seu caso? (Ex.: Direito Internacional, Societário, Contratos, Tributário, Trabalhista, Outro)",
+  COLLECT_CITY: "Em qual cidade você está?",
+  DONE: "Obrigado! Já registramos seus dados. Um de nossos advogados vai analisar seu caso e entrar em contato em breve. 🙏",
+};
+
 const LEGAL_AREAS = [
   "Direito Internacional",
   "Societário",
@@ -50,6 +73,16 @@ async function logError(userId, message) {
   } catch (e) {
     console.error("Falha ao gravar log de erro:", e);
   }
+}
+
+async function loadFunnelMessages(userId) {
+  const rows = await prisma.whatsappFunnelMessage.findMany({ where: { userId } });
+  const byKey = new Map(rows.map((r) => [r.key, r.text]));
+  const messages = {};
+  for (const key of Object.keys(DEFAULT_FUNNEL_MESSAGES)) {
+    messages[key] = byKey.get(key) ?? DEFAULT_FUNNEL_MESSAGES[key];
+  }
+  return messages;
 }
 
 // ---------- Auth state persistido no Postgres (substitui useMultiFileAuthState) ----------
@@ -130,13 +163,7 @@ async function notifyHuman(userId, subject, body) {
   });
 }
 
-const MENU_TEXT =
-  "Olá! 👋 Bem-vindo(a). Sou o assistente virtual e posso te ajudar a dar o primeiro passo. Escolha uma opção:\n\n" +
-  "1 - Falar sobre um novo caso\n" +
-  "2 - Acompanhar processo em andamento\n" +
-  "3 - Falar com um advogado";
-
-async function handleIncomingMessage(userId, phone, text, pushName) {
+async function handleIncomingMessage(userId, phone, text, pushName, funnel) {
   const client = await findOrCreateClient(userId, phone, pushName);
 
   let convo = await prisma.whatsappConversationState.findUnique({
@@ -146,10 +173,20 @@ async function handleIncomingMessage(userId, phone, text, pushName) {
   const normalized = text.trim().toLowerCase();
 
   if (!convo) {
-    convo = await prisma.whatsappConversationState.create({
-      data: { userId, phone, crmClientId: client.id, step: "MENU", attempts: 0 },
-    });
-    return MENU_TEXT;
+    try {
+      convo = await prisma.whatsappConversationState.create({
+        data: { userId, phone, crmClientId: client.id, step: "MENU", attempts: 0 },
+      });
+      return funnel.WELCOME_MENU;
+    } catch (err) {
+      // Corrida: mensagens em lote (ex.: histórico entregue após reconectar) podem
+      // chegar quase juntas para o mesmo número. Se outra já criou o estado nesse
+      // meio-tempo, só recarrega e segue o fluxo normal (não repete boas-vindas).
+      convo = await prisma.whatsappConversationState.findUnique({
+        where: { userId_phone: { userId, phone } },
+      });
+      if (!convo) throw err;
+    }
   }
 
   const advance = (data) =>
@@ -159,7 +196,7 @@ async function handleIncomingMessage(userId, phone, text, pushName) {
     case "MENU": {
       if (normalized === "1" || normalized.includes("novo caso")) {
         await advance({ step: "COLLECT_NAME", attempts: 0 });
-        return "Perfeito! Para começar, qual é o seu nome completo?";
+        return funnel.COLLECT_NAME;
       }
       if (normalized === "2" || normalized.includes("acompanhar")) {
         await advance({ step: "HUMAN_HANDOFF" });
@@ -168,7 +205,7 @@ async function handleIncomingMessage(userId, phone, text, pushName) {
           `${client.fullName} quer acompanhar um processo`,
           `O cliente ${client.fullName} (${phone}) pediu para acompanhar um processo em andamento pelo WhatsApp.`
         );
-        return "Certo! Vou avisar um de nossos advogados para te passar uma atualização. Só um momento. 🙏";
+        return funnel.HANDOFF_ACOMPANHAR;
       }
       if (normalized === "3" || normalized.includes("advogado")) {
         await advance({ step: "HUMAN_HANDOFF" });
@@ -177,7 +214,7 @@ async function handleIncomingMessage(userId, phone, text, pushName) {
           `${client.fullName} quer falar com um advogado`,
           `O cliente ${client.fullName} (${phone}) pediu para falar com um advogado pelo WhatsApp.`
         );
-        return "Combinado! Um de nossos advogados vai te atender em breve por aqui.";
+        return funnel.HANDOFF_ADVOGADO;
       }
       const attempts = convo.attempts + 1;
       if (attempts >= 2) {
@@ -187,16 +224,16 @@ async function handleIncomingMessage(userId, phone, text, pushName) {
           `${client.fullName} precisa de atendimento humano`,
           `O assistente automático não entendeu a mensagem do cliente ${client.fullName} (${phone}) após 2 tentativas.`
         );
-        return "Vou te encaminhar para um de nossos advogados para não perder tempo. Só um momento. 🙏";
+        return funnel.HANDOFF_ATTEMPTS;
       }
       await advance({ attempts });
-      return `Desculpe, não entendi. Responda com o número da opção:\n\n${MENU_TEXT.split("\n\n")[1]}`;
+      return funnel.MENU_INVALID;
     }
 
     case "COLLECT_NAME": {
       await prisma.crmClient.update({ where: { id: client.id }, data: { fullName: text.trim() } });
       await advance({ step: "COLLECT_AREA" });
-      return "Qual a área jurídica do seu caso? (Ex.: Direito Internacional, Societário, Contratos, Tributário, Trabalhista, Outro)";
+      return funnel.COLLECT_AREA;
     }
 
     case "COLLECT_AREA": {
@@ -206,7 +243,7 @@ async function handleIncomingMessage(userId, phone, text, pushName) {
         data: { legalArea: match || "Outro" },
       });
       await advance({ step: "COLLECT_CITY" });
-      return "Em qual cidade você está?";
+      return funnel.COLLECT_CITY;
     }
 
     case "COLLECT_CITY": {
@@ -219,7 +256,7 @@ async function handleIncomingMessage(userId, phone, text, pushName) {
         },
       });
       await advance({ step: "DONE" });
-      return "Obrigado! Já registramos seus dados. Um de nossos advogados vai analisar seu caso e entrar em contato em breve. 🙏";
+      return funnel.DONE;
     }
 
     case "DONE":
@@ -231,7 +268,7 @@ async function handleIncomingMessage(userId, phone, text, pushName) {
 
 // ---------- Fila de envio (humanização + limite por hora) ----------
 
-async function queueReply(userId, crmClientId, phone, body) {
+async function queueBotReply(userId, crmClientId, phone, body) {
   const delay = randomDelaySeconds();
   await prisma.whatsappMessage.create({
     data: {
@@ -240,28 +277,34 @@ async function queueReply(userId, crmClientId, phone, body) {
       phone,
       direction: "OUT",
       body,
+      source: "BOT",
       status: "QUEUED",
       scheduledFor: new Date(Date.now() + delay * 1000),
     },
   });
 }
 
-function startSendLoop(userId, sock) {
+function startSendLoop(userId, getSock) {
   setInterval(async () => {
+    const sock = getSock();
+    if (!sock) return;
     try {
-      // Comandos pendentes (desconectar/reconectar) vindos da tela do hub.
+      // Comandos pendentes vindos da tela do hub.
       const commands = await prisma.whatsappCommand.findMany({
         where: { userId, status: "PENDING" },
         orderBy: { createdAt: "asc" },
       });
       for (const cmd of commands) {
+        await prisma.whatsappCommand.update({ where: { id: cmd.id }, data: { status: "DONE" } });
         if (cmd.type === "DISCONNECT") {
           log("Comando de desconexão recebido, encerrando sessão...");
-          await prisma.whatsappCommand.update({ where: { id: cmd.id }, data: { status: "DONE" } });
           await sock.logout().catch(() => {});
           process.exit(0);
         }
-        await prisma.whatsappCommand.update({ where: { id: cmd.id }, data: { status: "DONE" } });
+        if (cmd.type === "NEW_QR") {
+          log("Comando para gerar novo QR Code recebido...");
+          sock.ws.close();
+        }
       }
 
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -298,6 +341,8 @@ function startSendLoop(userId, sock) {
 
 // ---------- Conexão ----------
 
+let currentSock = null;
+
 async function main() {
   const email = process.env.WHATSAPP_USER_EMAIL || process.env.ADMIN_EMAIL;
   if (!email) throw new Error("Defina WHATSAPP_USER_EMAIL ou ADMIN_EMAIL no .env");
@@ -309,7 +354,7 @@ async function main() {
   await prisma.whatsappSession.upsert({
     where: { userId },
     create: { userId, status: "CONNECTING" },
-    update: { status: "CONNECTING", lastError: "" },
+    update: { status: "CONNECTING" },
   });
 
   const { state, saveCreds, clear } = await usePostgresAuthState(userId);
@@ -319,6 +364,12 @@ async function main() {
     printQRInTerminal: false,
     browser: ["Internacional Hub", "Chrome", "1.0"],
   });
+  currentSock = sock;
+
+  if (!globalThis.__whatsappSendLoopStarted) {
+    globalThis.__whatsappSendLoopStarted = true;
+    startSendLoop(userId, () => currentSock);
+  }
 
   sock.ev.on("creds.update", saveCreds);
 
@@ -331,7 +382,7 @@ async function main() {
         where: { userId },
         data: { status: "CONNECTING", qrCode: qrDataUrl },
       });
-      log("Novo QR Code gerado - escaneie pelo hub.");
+      log("Novo QR Code gerado.");
     }
 
     if (connection === "open") {
@@ -353,28 +404,26 @@ async function main() {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       const loggedOut = statusCode === DisconnectReason.loggedOut;
 
-      await logError(userId, `Conexão encerrada (statusCode=${statusCode}): ${lastDisconnect?.error}`);
-      await prisma.whatsappSession.update({
-        where: { userId },
-        data: {
-          status: "DISCONNECTED",
-          lastError: String(lastDisconnect?.error ?? "conexão encerrada"),
-        },
-      });
-
       if (loggedOut) {
         log("Sessão desconectada pelo próprio WhatsApp (logout). Será necessário um novo QR Code.");
         await clear();
-        await prisma.whatsappSession.update({ where: { userId }, data: { status: "DISCONNECTED", qrCode: "" } });
+        await prisma.whatsappSession.update({
+          where: { userId },
+          data: { status: "DISCONNECTED", qrCode: "" },
+        });
       } else {
-        log("Conexão caiu, tentando reconectar em 5s...");
-        setTimeout(main, 5000);
+        // Mantém status "CONNECTING" durante o ciclo natural de renovação do QR
+        // (o código expira sozinho a cada ~20s e é normal reconectar) - assim a
+        // tela nunca pisca para "desconectado"/erro nesses casos comuns.
+        await prisma.whatsappSession.update({ where: { userId }, data: { status: "CONNECTING" } });
+        setTimeout(main, 3000);
       }
     }
   });
 
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
     if (type !== "notify") return;
+    const funnel = await loadFunnelMessages(userId);
     for (const msg of messages) {
       try {
         if (msg.key.fromMe) continue;
@@ -393,18 +442,24 @@ async function main() {
         const client = await findOrCreateClient(userId, phone, msg.pushName);
 
         await prisma.whatsappMessage.create({
-          data: { userId, crmClientId: client.id, phone, direction: "IN", body: text, status: "RECEIVED" },
+          data: {
+            userId,
+            crmClientId: client.id,
+            phone,
+            direction: "IN",
+            body: text,
+            source: "CLIENT",
+            status: "RECEIVED",
+          },
         });
 
-        const reply = await handleIncomingMessage(userId, phone, text, msg.pushName);
-        if (reply) await queueReply(userId, client.id, phone, reply);
+        const reply = await handleIncomingMessage(userId, phone, text, msg.pushName, funnel);
+        if (reply) await queueBotReply(userId, client.id, phone, reply);
       } catch (err) {
         await logError(userId, `Erro ao processar mensagem recebida: ${err}`);
       }
     }
   });
-
-  startSendLoop(userId, sock);
 }
 
 main().catch(async (err) => {
