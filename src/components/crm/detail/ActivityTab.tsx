@@ -13,6 +13,8 @@ const TYPE_LABEL: Record<string, string> = {
   DOCUMENT: "Documento",
   WHATSAPP: "WhatsApp",
   DUPLICATE: "Duplicação",
+  CASE: "Processo",
+  DEADLINE_ALERT: "Alerta de prazo",
 };
 
 export function ActivityTab({ clientId }: { clientId: string }) {

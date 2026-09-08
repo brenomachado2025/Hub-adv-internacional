@@ -36,6 +36,7 @@ model User {
   teamMembership TeamMember? @relation("TeamMembership")
 
   crmDocumentTemplates CrmDocumentTemplate[]
+  legalCases           LegalCase[]
 }
 
 // ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------
@@ -241,10 +242,66 @@ model CrmClient {
   meetings          CrmMeeting[]
   documents         CrmDocument[]
   activities        CrmActivity[]
+  legalCases        LegalCase[]
 
   @@index([userId])
   @@index([userId, status])
   @@index([userId, phone])
+}
+
+// ---------- Processos/Casos ----------
+// Consulta automática via API de tribunais (ex.: DataJud/CNJ) fica preparada
+// para o futuro: LegalCaseMovement.source distingue MANUAL de DATAJUD, e
+// LegalCase.caseNumber guarda o número CNJ para quando a integração existir.
+
+model LegalCase {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId   String
+  client     CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  caseNumber String    @default("") // número CNJ do processo, se houver
+  title      String
+  court      String    @default("") // tribunal/vara
+  status     String    @default("ACTIVE") // ACTIVE | CLOSED | ARCHIVED
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  closedAt   DateTime?
+
+  movements LegalCaseMovement[]
+  deadlines LegalCaseDeadline[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([clientId])
+}
+
+model LegalCaseMovement {
+  id          String    @id @default(cuid())
+  caseId      String
+  case        LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  type        String    @default("MOVEMENT") // MOVEMENT | DECISION | DISPATCH
+  description String
+  occurredAt  DateTime  @default(now())
+  source      String    @default("MANUAL") // MANUAL | DATAJUD
+  createdAt   DateTime  @default(now())
+
+  @@index([caseId])
+}
+
+model LegalCaseDeadline {
+  id         String    @id @default(cuid())
+  caseId     String
+  case       LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  title      String
+  dueDate    DateTime
+  alertDays  String    @default("5,2,1") // dias antes do vencimento para alertar, separados por vírgula
+  alertsSent String    @default("[]") // JSON array dos limiares já notificados, evita duplicar alerta
+  status     String    @default("PENDING") // PENDING | DONE | EXPIRED
+  createdAt  DateTime  @default(now())
+
+  @@index([caseId])
+  @@index([status, dueDate])
 }
 
 model CrmStatusHistory {
