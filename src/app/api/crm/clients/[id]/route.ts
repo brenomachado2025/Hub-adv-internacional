@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getWorkspaceOwnerId } from "@/lib/team";
+import { getWorkspaceOwnerId, getWorkspaceUserIds } from "@/lib/team";
 import { onlyDigits, crmStatusLabel } from "@/lib/data/crm";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const client = await prisma.crmClient.findUnique({
     where: { id },
-    include: { statusHistory: { orderBy: { changedAt: "asc" } } },
+    include: { statusHistory: { orderBy: { changedAt: "asc" } }, assignee: { select: { id: true, name: true, email: true } } },
   });
   if (!client || client.userId !== workspaceUserId) {
     return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
@@ -42,6 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     phone,
     email,
     status,
+    assigneeId,
   } = body as {
     fullName?: string;
     documentType?: string;
@@ -52,9 +53,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     phone?: string;
     email?: string;
     status?: string;
+    assigneeId?: string | null;
   };
 
   const newStatus = status && status !== existing.status ? status : undefined;
+  const newAssignee = assigneeId !== undefined && assigneeId !== existing.assigneeId;
+
+  if (newAssignee && assigneeId) {
+    const workspaceMemberIds = await getWorkspaceUserIds(workspaceUserId);
+    if (!workspaceMemberIds.includes(assigneeId)) {
+      return NextResponse.json({ error: "Responsável inválido" }, { status: 400 });
+    }
+  }
 
   const client = await prisma.crmClient.update({
     where: { id },
@@ -68,7 +78,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(phone !== undefined ? { phone: onlyDigits(phone) } : {}),
       ...(email !== undefined ? { email: email.trim() } : {}),
       ...(status !== undefined ? { status } : {}),
-      ...(newStatus ? { statusHistory: { create: { status: newStatus } } } : {}),
+      ...(assigneeId !== undefined ? { assigneeId: assigneeId || null } : {}),
+      ...(newStatus ? { statusHistory: { create: { status: newStatus } }, lastFollowUpAlertAt: null } : {}),
     },
   });
 
@@ -78,6 +89,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         clientId: id,
         type: "STATUS_CHANGE",
         description: `Status alterado para "${crmStatusLabel(newStatus)}"`,
+        actor: user.name || user.email,
+      },
+    });
+  }
+
+  if (newAssignee) {
+    const assigneeUser = assigneeId ? await prisma.user.findUnique({ where: { id: assigneeId } }) : null;
+    await prisma.crmAssignmentHistory.create({
+      data: { clientId: id, assigneeId: assigneeId || null, assigneeName: assigneeUser?.name || assigneeUser?.email || "" },
+    });
+    await prisma.crmActivity.create({
+      data: {
+        clientId: id,
+        type: "ASSIGNMENT",
+        description: assigneeUser
+          ? `Cliente atribuído a ${assigneeUser.name || assigneeUser.email}`
+          : "Atribuição removida",
         actor: user.name || user.email,
       },
     });

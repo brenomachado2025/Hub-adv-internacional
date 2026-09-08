@@ -38,6 +38,8 @@ model User {
   crmDocumentTemplates CrmDocumentTemplate[]
   legalCases           LegalCase[]
   feeContracts         FeeContract[]
+  assignedCrmClients   CrmClient[] @relation("CrmClientAssignee")
+  followUpRule         FollowUpRule?
 }
 
 // ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------
@@ -239,6 +241,9 @@ model CrmClient {
   email          String   @default("")
   status         String   @default("CONTACTED") // CONTACTED | INITIALIZED | IN_PROGRESS | FINISHED
   parentClientId String? // referência ao cliente original quando este foi criado via "Duplicar cadastro"
+  assigneeId     String? // advogado/responsável da equipe atribuído a este cliente
+  assignee       User?    @relation("CrmClientAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  lastFollowUpAlertAt DateTime? // evita repetir o alerta de "funil parado" enquanto o status não mudar
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -252,10 +257,33 @@ model CrmClient {
   legalCases        LegalCase[]
   feeContracts      FeeContract[]
   invoices          Invoice[]
+  assignmentHistory CrmAssignmentHistory[]
 
   @@index([userId])
   @@index([userId, status])
   @@index([userId, phone])
+  @@index([assigneeId])
+}
+
+model CrmAssignmentHistory {
+  id           String    @id @default(cuid())
+  clientId     String
+  client       CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assigneeId   String?
+  assigneeName String    @default("") // "" = não atribuído (removido)
+  assignedAt   DateTime  @default(now())
+
+  @@index([clientId])
+}
+
+// Regra de follow-up automático do funil: "se o cliente não mudar de status em N
+// dias, notificar o responsável". Uma regra por workspace (dono da conta).
+model FollowUpRule {
+  id      String  @id @default(cuid())
+  userId  String  @unique
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  days    Int     @default(7)
+  enabled Boolean @default(false)
 }
 
 // ---------- Processos/Casos ----------

@@ -87,6 +87,9 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                     <p className="text-xs text-neutral-400">
                       {client.city || "-"} · {formatDocument(client.documentType, client.documentNumber) || "-"}
                     </p>
+                    {client.assignee && (
+                      <p className="text-xs text-blue-600 mt-1">{client.assignee.name || client.assignee.email}</p>
+                    )}
 
                     <div className="flex items-center justify-between mt-2">
                       <button

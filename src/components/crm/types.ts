@@ -9,6 +9,8 @@ export type CrmClient = {
   phone: string;
   email: string;
   status: string;
+  assigneeId: string | null;
+  assignee: { id: string; name: string; email: string } | null;
   createdAt: string;
   updatedAt: string;
 };

@@ -153,7 +153,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         ))}
       </div>
 
-      {tab === "Visão Geral" && <OverviewTab client={client} />}
+      {tab === "Visão Geral" && <OverviewTab client={client} onUpdated={load} />}
       {tab === "Processos" && <CasesTab clientId={clientId} />}
       {tab === "Financeiro" && <FinanceTab clientId={clientId} />}
       {tab === "Notas" && <NotesTab clientId={clientId} />}

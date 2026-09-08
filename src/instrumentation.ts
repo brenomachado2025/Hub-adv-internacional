@@ -10,6 +10,7 @@ export async function register() {
   const { syncAllSources } = await import("@/lib/sanctions/sync");
   const { checkLegalDeadlines } = await import("@/lib/legal/deadlines");
   const { checkOverdueInstallments } = await import("@/lib/finance/billing");
+  const { checkStaleClients } = await import("@/lib/crm/followup");
 
   const runSync = () => {
     syncAllSources().catch((err) => {
@@ -37,4 +38,12 @@ export async function register() {
   };
   setTimeout(runOverdueCheck, 25_000);
   setInterval(runOverdueCheck, SYNC_INTERVAL_MS);
+
+  const runStaleCheck = () => {
+    checkStaleClients().catch((err) => {
+      console.error("[internacional-hub] Falha ao verificar follow-up do funil:", err);
+    });
+  };
+  setTimeout(runStaleCheck, 30_000);
+  setInterval(runStaleCheck, SYNC_INTERVAL_MS);
 }

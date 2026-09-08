@@ -16,6 +16,8 @@ const TYPE_LABEL: Record<string, string> = {
   CASE: "Processo",
   DEADLINE_ALERT: "Alerta de prazo",
   BILLING: "Financeiro",
+  ASSIGNMENT: "Atribuição",
+  FOLLOW_UP: "Follow-up",
 };
 
 export function ActivityTab({ clientId }: { clientId: string }) {

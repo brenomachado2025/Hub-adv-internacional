@@ -6,6 +6,7 @@ import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { ClientTable } from "@/components/crm/ClientTable";
 import { ClientFormModal } from "@/components/crm/ClientFormModal";
 import { ImportModal } from "@/components/crm/ImportModal";
+import { FollowUpSettings } from "@/components/crm/FollowUpSettings";
 import type { CrmClient } from "@/components/crm/types";
 
 export default function CrmPage() {
@@ -91,6 +92,8 @@ export default function CrmPage() {
           </button>
         </div>
       </div>
+
+      <FollowUpSettings />
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex rounded-md border border-neutral-300 dark:border-neutral-700 overflow-hidden text-sm">
