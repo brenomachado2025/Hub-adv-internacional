@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     companyName,
     city,
     phone,
+    email,
     status,
   } = body as {
     fullName: string;
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
     companyName?: string;
     city?: string;
     phone?: string;
+    email?: string;
     status?: string;
   };
 
@@ -78,6 +80,7 @@ export async function POST(req: NextRequest) {
       companyName: companyName?.trim() ?? "",
       city: city?.trim() ?? "",
       phone: onlyDigits(phone ?? ""),
+      email: email?.trim() ?? "",
       status: initialStatus,
       statusHistory: {
         create: { status: initialStatus },
@@ -93,6 +96,15 @@ export async function POST(req: NextRequest) {
       module: "crm",
       query: client.fullName,
       resultSummary: "Cliente cadastrado no CRM",
+    },
+  });
+
+  await prisma.crmActivity.create({
+    data: {
+      clientId: client.id,
+      type: "CREATED",
+      description: "Cliente cadastrado no CRM",
+      actor: user.name || user.email,
     },
   });
 

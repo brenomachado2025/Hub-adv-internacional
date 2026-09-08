@@ -56,5 +56,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cli
     },
   });
 
+  await prisma.crmActivity.create({
+    data: {
+      clientId,
+      type: "WHATSAPP",
+      description: `Mensagem enviada via WhatsApp: "${text.trim().slice(0, 100)}"`,
+      actor: user.name || user.email,
+    },
+  });
+
   return NextResponse.json({ message });
 }

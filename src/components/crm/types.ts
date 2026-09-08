@@ -7,6 +7,7 @@ export type CrmClient = {
   companyName: string;
   city: string;
   phone: string;
+  email: string;
   status: string;
   createdAt: string;
   updatedAt: string;

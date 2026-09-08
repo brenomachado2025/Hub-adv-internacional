@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CRM_STATUSES, nextCrmStatus, previousCrmStatus, formatDocument } from "@/lib/data/crm";
 import type { CrmClient } from "./types";
 
@@ -59,19 +60,25 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                     className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 shadow-sm cursor-grab active:cursor-grabbing"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <button
-                        onClick={() => onEdit(client)}
-                        className="text-sm font-medium text-left hover:underline"
-                      >
+                      <Link href={`/crm/${client.id}`} className="text-sm font-medium text-left hover:underline">
                         {client.fullName}
-                      </button>
-                      <button
-                        onClick={() => onDelete(client.id)}
-                        className="text-neutral-400 hover:text-red-600 text-xs"
-                        title="Excluir"
-                      >
-                        ✕
-                      </button>
+                      </Link>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => onEdit(client)}
+                          className="text-neutral-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs"
+                          title="Editar rápido"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => onDelete(client.id)}
+                          className="text-neutral-400 hover:text-red-600 text-xs"
+                          title="Excluir"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                     <p className="text-xs text-neutral-500 mt-1">{client.legalArea}</p>
                     {client.companyName && (

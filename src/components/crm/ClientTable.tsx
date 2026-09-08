@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { crmStatusLabel, formatDocument } from "@/lib/data/crm";
 import type { CrmClient } from "./types";
 
@@ -35,7 +36,11 @@ export function ClientTable({ clients, onEdit, onDelete }: Props) {
           )}
           {clients.map((c) => (
             <tr key={c.id} className="border-b border-neutral-100 dark:border-neutral-900">
-              <td className="py-2 px-3 font-medium">{c.fullName}</td>
+              <td className="py-2 px-3 font-medium">
+                <Link href={`/crm/${c.id}`} className="hover:underline">
+                  {c.fullName}
+                </Link>
+              </td>
               <td className="py-2 px-3">
                 {c.documentType}: {formatDocument(c.documentType, c.documentNumber) || "-"}
               </td>

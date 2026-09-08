@@ -34,6 +34,8 @@ model User {
 
   ownedTeam      Team?       @relation("TeamOwner")
   teamMembership TeamMember? @relation("TeamMembership")
+
+  crmDocumentTemplates CrmDocumentTemplate[]
 }
 
 // ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------
@@ -226,12 +228,19 @@ model CrmClient {
   companyName    String   @default("")
   city           String   @default("")
   phone          String   @default("") // apenas dígitos, com DDI (ex.: 5511999999999)
+  email          String   @default("")
   status         String   @default("CONTACTED") // CONTACTED | INITIALIZED | IN_PROGRESS | FINISHED
+  parentClientId String? // referência ao cliente original quando este foi criado via "Duplicar cadastro"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   statusHistory     CrmStatusHistory[]
   whatsappMessages  WhatsappMessage[]
+  notes             CrmNote[]
+  tasks             CrmTask[]
+  meetings          CrmMeeting[]
+  documents         CrmDocument[]
+  activities        CrmActivity[]
 
   @@index([userId])
   @@index([userId, status])
@@ -244,6 +253,86 @@ model CrmStatusHistory {
   client    CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
   status    String
   changedAt DateTime  @default(now())
+
+  @@index([clientId])
+}
+
+// Linha do tempo unificada de ações rápidas do cliente (requisito geral: toda
+// ação deve gerar um registro de quem fez o quê e quando).
+model CrmActivity {
+  id          String    @id @default(cuid())
+  clientId    String
+  client      CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  type        String    // STATUS_CHANGE | NOTE | TASK | MEETING | DOCUMENT | WHATSAPP | DUPLICATE | CREATED
+  description String
+  actor       String    @default("")
+  createdAt   DateTime  @default(now())
+
+  @@index([clientId])
+}
+
+model CrmNote {
+  id        String    @id @default(cuid())
+  clientId  String
+  client    CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  authorName String   @default("")
+  text      String
+  createdAt DateTime  @default(now())
+
+  @@index([clientId])
+}
+
+model CrmTask {
+  id          String    @id @default(cuid())
+  clientId    String
+  client      CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title       String
+  assignee    String    @default("") // nome/e-mail livre do responsável
+  dueDate     DateTime?
+  status      String    @default("PENDING") // PENDING | DONE
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([clientId])
+  @@index([clientId, status])
+}
+
+model CrmMeeting {
+  id           String    @id @default(cuid())
+  clientId     String
+  client       CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title        String
+  scheduledFor DateTime
+  notes        String    @default("")
+  createdAt    DateTime  @default(now())
+
+  @@index([clientId])
+}
+
+// Modelos de documento (contrato, procuração etc.) com placeholders
+// {{fullName}}, {{documentNumber}}, {{city}}... preenchidos automaticamente.
+model CrmDocumentTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+
+  documents CrmDocument[]
+
+  @@index([userId])
+}
+
+model CrmDocument {
+  id         String               @id @default(cuid())
+  clientId   String
+  client     CrmClient            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  templateId String?
+  template   CrmDocumentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  title      String
+  content    String
+  createdAt  DateTime             @default(now())
 
   @@index([clientId])
 }

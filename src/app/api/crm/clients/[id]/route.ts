@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getWorkspaceOwnerId } from "@/lib/team";
-import { onlyDigits } from "@/lib/data/crm";
+import { onlyDigits, crmStatusLabel } from "@/lib/data/crm";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -40,6 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     companyName,
     city,
     phone,
+    email,
     status,
   } = body as {
     fullName?: string;
@@ -49,6 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     companyName?: string;
     city?: string;
     phone?: string;
+    email?: string;
     status?: string;
   };
 
@@ -64,10 +66,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(companyName !== undefined ? { companyName: companyName.trim() } : {}),
       ...(city !== undefined ? { city: city.trim() } : {}),
       ...(phone !== undefined ? { phone: onlyDigits(phone) } : {}),
+      ...(email !== undefined ? { email: email.trim() } : {}),
       ...(status !== undefined ? { status } : {}),
       ...(newStatus ? { statusHistory: { create: { status: newStatus } } } : {}),
     },
   });
+
+  if (newStatus) {
+    await prisma.crmActivity.create({
+      data: {
+        clientId: id,
+        type: "STATUS_CHANGE",
+        description: `Status alterado para "${crmStatusLabel(newStatus)}"`,
+        actor: user.name || user.email,
+      },
+    });
+  }
 
   if (newStatus && client.phone) {
     const hasIncomingMessage = await prisma.whatsappMessage.findFirst({

@@ -29,6 +29,7 @@ export function ClientFormModal({ client, onClose, onSaved }: Props) {
   const [companyName, setCompanyName] = useState(client?.companyName ?? "");
   const [city, setCity] = useState(client?.city ?? "");
   const [phone, setPhone] = useState(client?.phone ?? "");
+  const [email, setEmail] = useState(client?.email ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<WhatsappMessage[] | null>(null);
@@ -59,6 +60,7 @@ export function ClientFormModal({ client, onClose, onSaved }: Props) {
         companyName: showCompanyField ? companyName : "",
         city,
         phone: onlyDigits(phone),
+        email,
       };
       const res = await fetch(client ? `/api/crm/clients/${client.id}` : "/api/crm/clients", {
         method: client ? "PATCH" : "POST",
@@ -176,6 +178,17 @@ export function ClientFormModal({ client, onClose, onSaved }: Props) {
               className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-neutral-500">E-mail</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="cliente@exemplo.com"
+            className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+          />
         </div>
 
         {client && messages && messages.length > 0 && (
