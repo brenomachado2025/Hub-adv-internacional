@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getWorkspaceUserIds } from "@/lib/team";
 
 function csvEscape(value: string): string {
   if (/[",\n]/.test(value)) {
@@ -12,9 +13,10 @@ function csvEscape(value: string): string {
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserIds = await getWorkspaceUserIds(user.userId);
 
   const logs = await prisma.auditLog.findMany({
-    where: { OR: [{ userId: user.userId }, { userId: null }] },
+    where: { OR: [{ userId: { in: workspaceUserIds } }, { userId: null }] },
     orderBy: { createdAt: "desc" },
   });
 

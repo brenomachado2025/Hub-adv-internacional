@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Bell } from "lucide-react";
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState<number | null>(null);
@@ -32,7 +33,7 @@ export function NotificationBell() {
       href="/notificacoes"
       className="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-800 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-900"
     >
-      <span aria-hidden>📬</span>
+      <Bell size={16} strokeWidth={1.75} />
       Notificações
       {unreadCount !== null && unreadCount > 0 && (
         <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">

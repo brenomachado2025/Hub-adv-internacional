@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getWorkspaceOwnerId } from "@/lib/team";
 import { CRM_STATUS_ORDER } from "@/lib/data/crm";
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
-  const rows = await prisma.whatsappStatusNotification.findMany({ where: { userId: user.userId } });
+  const rows = await prisma.whatsappStatusNotification.findMany({ where: { userId: workspaceUserId } });
   const byStatus = new Map(rows.map((r) => [r.status, r]));
 
   const configs = CRM_STATUS_ORDER.map((status) => ({
@@ -22,6 +24,7 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const { status, message, enabled } = (await req.json()) as {
     status?: string;
@@ -34,8 +37,8 @@ export async function PUT(req: NextRequest) {
   }
 
   await prisma.whatsappStatusNotification.upsert({
-    where: { userId_status: { userId: user.userId, status } },
-    create: { userId: user.userId, status, message: message ?? "", enabled: !!enabled },
+    where: { userId_status: { userId: workspaceUserId, status } },
+    create: { userId: workspaceUserId, status, message: message ?? "", enabled: !!enabled },
     update: { message: message ?? "", enabled: !!enabled },
   });
 

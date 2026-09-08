@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getWorkspaceOwnerId } from "@/lib/team";
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const invoices = await prisma.invoice.findMany({
-    where: { userId: user.userId },
+    where: { userId: workspaceUserId },
     orderBy: { createdAt: "desc" },
     include: { items: true },
   });
@@ -26,6 +28,7 @@ async function generateInvoiceNumber(userId: string): Promise<string> {
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const body = await req.json();
   const {
@@ -71,16 +74,16 @@ export async function POST(req: NextRequest) {
   let linkedFeeCalculationId: string | null = null;
   if (feeCalculationId) {
     const calc = await prisma.feeCalculation.findUnique({ where: { id: feeCalculationId } });
-    if (calc && calc.userId === user.userId) {
+    if (calc && calc.userId === workspaceUserId) {
       linkedFeeCalculationId = calc.id;
     }
   }
 
-  const number = await generateInvoiceNumber(user.userId);
+  const number = await generateInvoiceNumber(workspaceUserId);
 
   const invoice = await prisma.invoice.create({
     data: {
-      userId: user.userId,
+      userId: workspaceUserId,
       number,
       issuerName,
       issuerTaxId: issuerTaxId ?? "",
@@ -109,7 +112,7 @@ export async function POST(req: NextRequest) {
 
   await prisma.notification.create({
     data: {
-      userId: user.userId,
+      userId: workspaceUserId,
       type: "INVOICE",
       sender: "Faturamento",
       subject: `Fatura ${invoice.number} emitida`,

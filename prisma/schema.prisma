@@ -31,6 +31,47 @@ model User {
   whatsappMessages WhatsappMessage[]
   whatsappStatusNotifications WhatsappStatusNotification[]
   whatsappFunnelMessages WhatsappFunnelMessage[]
+
+  ownedTeam      Team?       @relation("TeamOwner")
+  teamMembership TeamMember? @relation("TeamMembership")
+}
+
+// ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------
+
+model Team {
+  id        String   @id @default(cuid())
+  ownerId   String   @unique
+  owner     User     @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String   @default("Equipe padrão")
+  createdAt DateTime @default(now())
+
+  members TeamMember[]
+  invites TeamInvite[]
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId   String   @unique
+  user     User     @relation("TeamMembership", fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@index([teamId])
+}
+
+model TeamInvite {
+  id         String    @id @default(cuid())
+  teamId     String
+  team       Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  email      String
+  code       String    @unique
+  status     String    @default("PENDING") // PENDING | ACCEPTED | REVOKED
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  @@index([teamId])
+  @@index([email])
 }
 
 // ---------- Sanções ----------

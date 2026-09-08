@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getWorkspaceOwnerId } from "@/lib/team";
 import { DashboardHome } from "@/components/DashboardHome";
 
 export const dynamic = "force-dynamic";
@@ -14,18 +15,19 @@ const WHATSAPP_STATUS_LABEL: Record<string, { label: string; color: string }> = 
 export default async function DashboardPage() {
   const session = await getCurrentUser();
   if (!session) redirect("/login");
+  const workspaceUserId = await getWorkspaceOwnerId(session.userId);
 
   const [account, activeSanctions, unreadNotifications, recentChanges, invoiceCount, lastSync, whatsappSession] =
     await Promise.all([
       prisma.user.findUnique({ where: { id: session.userId } }),
       prisma.sanctionEntry.count({ where: { active: true } }),
-      prisma.notification.count({ where: { userId: session.userId, isRead: false } }),
+      prisma.notification.count({ where: { userId: workspaceUserId, isRead: false } }),
       prisma.sanctionChangeEvent.count({
         where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
       }),
-      prisma.invoice.count({ where: { userId: session.userId } }),
+      prisma.invoice.count({ where: { userId: workspaceUserId } }),
       prisma.sanctionSyncRun.findFirst({ orderBy: { startedAt: "desc" } }),
-      prisma.whatsappSession.findUnique({ where: { userId: session.userId } }),
+      prisma.whatsappSession.findUnique({ where: { userId: workspaceUserId } }),
     ]);
 
   if (!account) redirect("/login");
@@ -34,16 +36,16 @@ export default async function DashboardPage() {
   startOfDay.setHours(0, 0, 0, 0);
   const [whatsappSentToday, whatsappReceivedToday] = await Promise.all([
     prisma.whatsappMessage.count({
-      where: { userId: session.userId, direction: "OUT", status: "SENT", sentAt: { gte: startOfDay } },
+      where: { userId: workspaceUserId, direction: "OUT", status: "SENT", sentAt: { gte: startOfDay } },
     }),
     prisma.whatsappMessage.count({
-      where: { userId: session.userId, direction: "IN", createdAt: { gte: startOfDay } },
+      where: { userId: workspaceUserId, direction: "IN", createdAt: { gte: startOfDay } },
     }),
   ]);
 
   const [recentInvoices, recentNotifications] = await Promise.all([
-    prisma.invoice.findMany({ where: { userId: session.userId }, orderBy: { createdAt: "desc" }, take: 5 }),
-    prisma.notification.findMany({ where: { userId: session.userId }, orderBy: { createdAt: "desc" }, take: 5 }),
+    prisma.invoice.findMany({ where: { userId: workspaceUserId }, orderBy: { createdAt: "desc" }, take: 5 }),
+    prisma.notification.findMany({ where: { userId: workspaceUserId }, orderBy: { createdAt: "desc" }, take: 5 }),
   ]);
 
   const rawFirstName = (account.name || account.email).trim().split(/\s+/)[0];

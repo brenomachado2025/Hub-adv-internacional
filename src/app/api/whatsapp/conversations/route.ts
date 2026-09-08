@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getWorkspaceOwnerId } from "@/lib/team";
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const clients = await prisma.crmClient.findMany({
-    where: { userId: user.userId, phone: { not: "" } },
+    where: { userId: workspaceUserId, phone: { not: "" } },
     include: {
       whatsappMessages: { orderBy: { createdAt: "desc" }, take: 1 },
     },

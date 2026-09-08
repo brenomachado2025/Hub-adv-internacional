@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getWorkspaceOwnerId } from "@/lib/team";
 import { crmStatusLabel, formatDocument, onlyDigits } from "@/lib/data/crm";
 
 function csvEscape(value: string): string {
@@ -13,6 +14,7 @@ function csvEscape(value: string): string {
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const status = req.nextUrl.searchParams.get("status") ?? undefined;
   const legalArea = req.nextUrl.searchParams.get("legalArea") ?? undefined;
@@ -21,7 +23,7 @@ export async function GET(req: NextRequest) {
 
   const clients = await prisma.crmClient.findMany({
     where: {
-      userId: user.userId,
+      userId: workspaceUserId,
       ...(status ? { status } : {}),
       ...(legalArea ? { legalArea } : {}),
       ...(city ? { city: { equals: city, mode: "insensitive" } } : {}),

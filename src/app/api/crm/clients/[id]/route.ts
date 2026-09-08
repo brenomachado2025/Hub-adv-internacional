@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getWorkspaceOwnerId } from "@/lib/team";
 import { onlyDigits } from "@/lib/data/crm";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const { id } = await params;
   const client = await prisma.crmClient.findUnique({
     where: { id },
     include: { statusHistory: { orderBy: { changedAt: "asc" } } },
   });
-  if (!client || client.userId !== user.userId) {
+  if (!client || client.userId !== workspaceUserId) {
     return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
   }
   return NextResponse.json({ client });
@@ -21,10 +23,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const { id } = await params;
   const existing = await prisma.crmClient.findUnique({ where: { id } });
-  if (!existing || existing.userId !== user.userId) {
+  if (!existing || existing.userId !== workspaceUserId) {
     return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
   }
 
@@ -71,13 +74,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       where: { crmClientId: client.id, direction: "IN" },
     });
     const notifConfig = await prisma.whatsappStatusNotification.findUnique({
-      where: { userId_status: { userId: user.userId, status: newStatus } },
+      where: { userId_status: { userId: workspaceUserId, status: newStatus } },
     });
     if (hasIncomingMessage && notifConfig?.enabled && notifConfig.message.trim()) {
       const delaySeconds = Math.floor(Math.random() * 26) + 5; // 5 a 30s, mesma humanização do bot
       await prisma.whatsappMessage.create({
         data: {
-          userId: user.userId,
+          userId: workspaceUserId,
           crmClientId: client.id,
           phone: client.phone,
           direction: "OUT",
@@ -95,10 +98,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const { id } = await params;
   const existing = await prisma.crmClient.findUnique({ where: { id } });
-  if (!existing || existing.userId !== user.userId) {
+  if (!existing || existing.userId !== workspaceUserId) {
     return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
   }
 

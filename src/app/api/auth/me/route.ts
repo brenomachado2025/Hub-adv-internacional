@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
@@ -17,4 +17,22 @@ export async function GET() {
   if (!dbUser) return NextResponse.json({ user: null }, { status: 200 });
 
   return NextResponse.json({ user: dbUser });
+}
+
+export async function PATCH(req: NextRequest) {
+  const session = await getCurrentUser();
+  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const { name, title } = (await req.json()) as { name?: string; title?: string };
+  const data: { name?: string; title?: string } = {};
+  if (typeof name === "string") data.name = name.trim();
+  if (typeof title === "string" && ["", "Sr.", "Sra."].includes(title)) data.title = title;
+
+  const updated = await prisma.user.update({
+    where: { id: session.userId },
+    data,
+    select: { email: true, name: true, title: true, role: true },
+  });
+
+  return NextResponse.json({ user: updated });
 }

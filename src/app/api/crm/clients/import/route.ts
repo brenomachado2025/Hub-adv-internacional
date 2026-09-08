@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getWorkspaceOwnerId } from "@/lib/team";
 import { onlyDigits, LEGAL_AREAS } from "@/lib/data/crm";
 
 type ImportRow = {
@@ -15,6 +16,7 @@ type ImportRow = {
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const { rows } = (await req.json()) as { rows: ImportRow[] };
 
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
         : "Outro";
 
       return {
-        userId: user.userId,
+        userId: workspaceUserId,
         fullName,
         documentType,
         documentNumber: onlyDigits(row.documentNumber ?? ""),

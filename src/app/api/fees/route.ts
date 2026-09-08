@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getExchangeRate } from "@/lib/fx";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getWorkspaceOwnerId } from "@/lib/team";
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const calculations = await prisma.feeCalculation.findMany({
-    where: { userId: user.userId },
+    where: { userId: workspaceUserId },
     orderBy: { createdAt: "desc" },
     take: 200,
   });
@@ -18,6 +20,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const body = await req.json();
   const {
@@ -48,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const calculation = await prisma.feeCalculation.create({
     data: {
-      userId: user.userId,
+      userId: workspaceUserId,
       description: description ?? "",
       baseAmount,
       baseCurrency,
