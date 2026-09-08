@@ -109,5 +109,21 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  const autoTaskRule = await prisma.autoTaskRule.findUnique({ where: { userId: workspaceUserId } });
+  if (autoTaskRule?.enabled) {
+    const dueDate = new Date(Date.now() + autoTaskRule.daysUntilDue * 24 * 60 * 60 * 1000);
+    await prisma.crmTask.create({
+      data: { clientId: client.id, title: autoTaskRule.taskTitle, dueDate },
+    });
+    await prisma.crmActivity.create({
+      data: {
+        clientId: client.id,
+        type: "TASK",
+        description: `Tarefa automática criada: ${autoTaskRule.taskTitle}`,
+        actor: "automação",
+      },
+    });
+  }
+
   return NextResponse.json({ client });
 }

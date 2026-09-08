@@ -41,6 +41,7 @@ model User {
   assignedCrmClients   CrmClient[] @relation("CrmClientAssignee")
   followUpRule         FollowUpRule?
   timeEntries          TimeEntry[]
+  autoTaskRule         AutoTaskRule?
 }
 
 // ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------
@@ -285,6 +286,16 @@ model FollowUpRule {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   days    Int     @default(7)
   enabled Boolean @default(false)
+}
+
+// Automação "novo cliente cadastrado -> cria tarefa de primeiro contato".
+model AutoTaskRule {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled       Boolean @default(false)
+  taskTitle     String  @default("Primeiro contato")
+  daysUntilDue  Int     @default(1)
 }
 
 // ---------- Processos/Casos ----------
