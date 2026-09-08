@@ -41,15 +41,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const owner = await prisma.user.findUnique({ where: { id: workspaceUserId } });
   const content = fillTemplate(template.body, client, owner?.name || owner?.email || "");
 
+  // Documento gerado pelo próprio dono da conta não precisa de revisão; gerado por
+  // um membro da equipe (ex.: estagiário) entra como pendente de aprovação antes
+  // de poder ser marcado como enviado ao cliente.
+  const isOwnerActing = user.userId === workspaceUserId;
+
   const document = await prisma.crmDocument.create({
-    data: { clientId: id, templateId: template.id, title: template.title, content },
+    data: {
+      clientId: id,
+      templateId: template.id,
+      title: template.title,
+      content,
+      createdBy: user.name || user.email,
+      status: isOwnerActing ? "APPROVED" : "PENDING_APPROVAL",
+      approvedAt: isOwnerActing ? new Date() : null,
+    },
   });
 
   await prisma.crmActivity.create({
     data: {
       clientId: id,
       type: "DOCUMENT",
-      description: `Documento gerado: ${document.title}`,
+      description: isOwnerActing
+        ? `Documento gerado: ${document.title}`
+        : `Documento gerado (pendente de aprovação): ${document.title}`,
       actor: user.name || user.email,
     },
   });

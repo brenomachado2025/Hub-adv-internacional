@@ -40,6 +40,7 @@ model User {
   feeContracts         FeeContract[]
   assignedCrmClients   CrmClient[] @relation("CrmClientAssignee")
   followUpRule         FollowUpRule?
+  timeEntries          TimeEntry[]
 }
 
 // ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------
@@ -309,10 +310,29 @@ model LegalCase {
   deadlines    LegalCaseDeadline[]
   feeContracts FeeContract[]
   invoices     Invoice[]
+  timeEntries  TimeEntry[]
 
   @@index([userId])
   @@index([userId, status])
   @@index([clientId])
+}
+
+// Horas trabalhadas por processo - útil para cobrança por hora ou controle de
+// produtividade da equipe.
+model TimeEntry {
+  id          String    @id @default(cuid())
+  caseId      String
+  case        LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  description String    @default("")
+  hours       Float
+  hourlyRate  Float?
+  date        DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  @@index([caseId])
+  @@index([userId])
 }
 
 model LegalCaseMovement {
@@ -461,14 +481,18 @@ model CrmDocumentTemplate {
 }
 
 model CrmDocument {
-  id         String               @id @default(cuid())
-  clientId   String
-  client     CrmClient            @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  templateId String?
-  template   CrmDocumentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  title      String
-  content    String
-  createdAt  DateTime             @default(now())
+  id           String               @id @default(cuid())
+  clientId     String
+  client       CrmClient            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  templateId   String?
+  template     CrmDocumentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  title        String
+  content      String
+  createdBy    String   @default("") // nome de quem gerou, exibido no fluxo de aprovação
+  status       String   @default("APPROVED") // PENDING_APPROVAL | APPROVED | SENT
+  approvedAt   DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime             @default(now())
 
   @@index([clientId])
 }

@@ -4,6 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 type Deadline = { id: string; title: string; dueDate: string; status: string; alertDays: string };
+type TimeEntry = {
+  id: string;
+  description: string;
+  hours: number;
+  hourlyRate: number | null;
+  date: string;
+  user: { name: string; email: string };
+};
 type CaseItem = {
   id: string;
   title: string;
@@ -143,17 +151,23 @@ function CaseDetail({
 }) {
   const [movements, setMovements] = useState<{ id: string; type: string; description: string; occurredAt: string }[]>([]);
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [movementText, setMovementText] = useState("");
   const [deadlineTitle, setDeadlineTitle] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
+  const [entryDescription, setEntryDescription] = useState("");
+  const [entryHours, setEntryHours] = useState("");
+  const [entryRate, setEntryRate] = useState("");
 
   const load = useCallback(async () => {
-    const [mRes, dRes] = await Promise.all([
+    const [mRes, dRes, tRes] = await Promise.all([
       fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/movements`),
       fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/deadlines`),
+      fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries`),
     ]);
     setMovements((await mRes.json()).movements ?? []);
     setDeadlines((await dRes.json()).deadlines ?? []);
+    setTimeEntries((await tRes.json()).entries ?? []);
   }, [clientId, legalCase.id]);
 
   useEffect(() => {
@@ -193,6 +207,32 @@ function CaseDetail({
     load();
     onReload();
   };
+
+  const addTimeEntry = async () => {
+    const hours = parseFloat(entryHours.replace(",", "."));
+    if (!hours || hours <= 0) return;
+    await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: entryDescription,
+        hours,
+        hourlyRate: entryRate ? parseFloat(entryRate.replace(",", ".")) : undefined,
+      }),
+    });
+    setEntryDescription("");
+    setEntryHours("");
+    setEntryRate("");
+    load();
+  };
+
+  const removeTimeEntry = async (entryId: string) => {
+    await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries/${entryId}`, { method: "DELETE" });
+    load();
+  };
+
+  const totalHours = timeEntries.reduce((sum, e) => sum + e.hours, 0);
+  const totalValue = timeEntries.reduce((sum, e) => sum + (e.hourlyRate ? e.hours * e.hourlyRate : 0), 0);
 
   return (
     <div className="border-t border-neutral-200 dark:border-neutral-800 p-4 space-y-5 bg-neutral-50 dark:bg-neutral-950">
@@ -280,6 +320,62 @@ function CaseDetail({
             <div key={m.id} className="text-sm bg-white dark:bg-neutral-900 rounded-md border border-neutral-200 dark:border-neutral-800 px-3 py-2">
               <p>{m.description}</p>
               <p className="text-xs text-neutral-400 mt-0.5">{new Date(m.occurredAt).toLocaleString("pt-BR")}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h5 className="text-xs font-semibold uppercase text-neutral-400 mb-2">Horas trabalhadas</h5>
+        <div className="grid sm:grid-cols-[1fr_100px_120px_auto] gap-2 mb-2">
+          <input
+            value={entryDescription}
+            onChange={(e) => setEntryDescription(e.target.value)}
+            placeholder="Descrição (opcional)"
+            className="px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+          />
+          <input
+            value={entryHours}
+            onChange={(e) => setEntryHours(e.target.value)}
+            placeholder="Horas"
+            inputMode="decimal"
+            className="px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+          />
+          <input
+            value={entryRate}
+            onChange={(e) => setEntryRate(e.target.value)}
+            placeholder="Valor/hora (opcional)"
+            inputMode="decimal"
+            className="px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+          />
+          <button onClick={addTimeEntry} className="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-900 text-white text-xs">
+            Registrar
+          </button>
+        </div>
+        {timeEntries.length > 0 && (
+          <p className="text-xs text-neutral-500 mb-2">
+            Total: {totalHours.toFixed(1)}h{totalValue > 0 && ` · ${totalValue.toFixed(2)} (estimado pelo valor/hora informado)`}
+          </p>
+        )}
+        <div className="space-y-1.5">
+          {timeEntries.length === 0 && <p className="text-xs text-neutral-500">Nenhuma hora registrada.</p>}
+          {timeEntries.map((e) => (
+            <div
+              key={e.id}
+              className="flex items-center justify-between text-sm bg-white dark:bg-neutral-900 rounded-md border border-neutral-200 dark:border-neutral-800 px-3 py-2"
+            >
+              <div>
+                <p>
+                  {e.hours}h {e.description && `— ${e.description}`}
+                  {e.hourlyRate ? ` (${(e.hours * e.hourlyRate).toFixed(2)})` : ""}
+                </p>
+                <p className="text-xs text-neutral-400">
+                  {e.user.name || e.user.email} · {new Date(e.date).toLocaleDateString("pt-BR")}
+                </p>
+              </div>
+              <button onClick={() => removeTimeEntry(e.id)} className="text-xs text-red-600 hover:underline shrink-0">
+                Remover
+              </button>
             </div>
           ))}
         </div>
