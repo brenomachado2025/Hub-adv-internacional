@@ -8,11 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "seed": "node --env-file=.env prisma/seed.mjs"
+    "seed": "node --env-file=.env prisma/seed.mjs",
+    "whatsapp-worker": "node --env-file=.env scripts/whatsapp-worker.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@react-pdf/renderer": "^4.9.0",
+    "baileys": "^7.0.0-rc14",
     "bcryptjs": "^3.0.3",
     "csv-parse": "^7.0.2",
     "exceljs": "^4.4.0",
@@ -22,6 +24,7 @@
     "luxon": "^3.7.2",
     "next": "16.3.4",
     "prisma": "^6.19.3",
+    "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -41,6 +44,8 @@
     "unrs-resolver@1.12.2": true,
     "@prisma/client@6.19.3": true,
     "prisma@6.19.3": true,
-    "@prisma/engines@6.19.3": true
+    "@prisma/engines@6.19.3": true,
+    "baileys@7.0.0-rc14": true,
+    "protobufjs@7.6.6": true
   }
 }

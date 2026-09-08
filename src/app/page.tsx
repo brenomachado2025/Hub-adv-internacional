@@ -9,15 +9,35 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [activeSanctions, unreadNotifications, recentChanges, invoiceCount, lastSync] = await Promise.all([
-    prisma.sanctionEntry.count({ where: { active: true } }),
-    prisma.notification.count({ where: { userId: user.userId, isRead: false } }),
-    prisma.sanctionChangeEvent.count({
-      where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+  const [activeSanctions, unreadNotifications, recentChanges, invoiceCount, lastSync, whatsappSession] =
+    await Promise.all([
+      prisma.sanctionEntry.count({ where: { active: true } }),
+      prisma.notification.count({ where: { userId: user.userId, isRead: false } }),
+      prisma.sanctionChangeEvent.count({
+        where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+      }),
+      prisma.invoice.count({ where: { userId: user.userId } }),
+      prisma.sanctionSyncRun.findFirst({ orderBy: { startedAt: "desc" } }),
+      prisma.whatsappSession.findUnique({ where: { userId: user.userId } }),
+    ]);
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const [whatsappSentToday, whatsappReceivedToday] = await Promise.all([
+    prisma.whatsappMessage.count({
+      where: { userId: user.userId, direction: "OUT", status: "SENT", sentAt: { gte: startOfDay } },
     }),
-    prisma.invoice.count({ where: { userId: user.userId } }),
-    prisma.sanctionSyncRun.findFirst({ orderBy: { startedAt: "desc" } }),
+    prisma.whatsappMessage.count({
+      where: { userId: user.userId, direction: "IN", createdAt: { gte: startOfDay } },
+    }),
   ]);
+
+  const WHATSAPP_STATUS_LABEL: Record<string, { label: string; color: string }> = {
+    CONNECTED: { label: "Conectado", color: "bg-emerald-500" },
+    CONNECTING: { label: "Conectando...", color: "bg-amber-500" },
+    DISCONNECTED: { label: "Desconectado", color: "bg-red-500" },
+  };
+  const whatsappStatus = WHATSAPP_STATUS_LABEL[whatsappSession?.status ?? "DISCONNECTED"];
 
   const recentInvoices = await prisma.invoice.findMany({
     where: { userId: user.userId },
@@ -89,6 +109,26 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      <Link
+        href="/whatsapp"
+        className="block rounded-lg border border-neutral-200 dark:border-neutral-800 p-4 hover:shadow-sm transition-shadow"
+      >
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <span className={`w-2.5 h-2.5 rounded-full ${whatsappStatus.color}`} />
+            <span className="font-semibold">WhatsApp — {whatsappStatus.label}</span>
+          </div>
+          <div className="flex gap-6 text-sm">
+            <span>
+              <strong className="text-emerald-600">{whatsappSentToday}</strong> enviadas hoje
+            </span>
+            <span>
+              <strong className="text-blue-600">{whatsappReceivedToday}</strong> recebidas hoje
+            </span>
+          </div>
+        </div>
+      </Link>
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">

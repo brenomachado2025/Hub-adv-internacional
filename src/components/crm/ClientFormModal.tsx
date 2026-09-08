@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LEGAL_AREAS, formatDocument } from "@/lib/data/crm";
+import { LEGAL_AREAS, formatDocument, onlyDigits } from "@/lib/data/crm";
 import type { CrmClient } from "./types";
 
 type Props = {
   client: CrmClient | null;
   onClose: () => void;
   onSaved: () => void;
+};
+
+type WhatsappMessage = {
+  id: string;
+  direction: string;
+  body: string;
+  status: string;
+  createdAt: string;
 };
 
 export function ClientFormModal({ client, onClose, onSaved }: Props) {
@@ -20,12 +28,21 @@ export function ClientFormModal({ client, onClose, onSaved }: Props) {
   const [linkedToCompany, setLinkedToCompany] = useState(!!client?.companyName);
   const [companyName, setCompanyName] = useState(client?.companyName ?? "");
   const [city, setCity] = useState(client?.city ?? "");
+  const [phone, setPhone] = useState(client?.phone ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<WhatsappMessage[] | null>(null);
 
   useEffect(() => {
     setDocumentNumber((prev) => formatDocument(documentType, prev));
   }, [documentType]);
+
+  useEffect(() => {
+    if (!client) return;
+    fetch(`/api/crm/clients/${client.id}/messages`)
+      .then((res) => res.json())
+      .then((data) => setMessages(data.messages ?? []));
+  }, [client]);
 
   const showCompanyField = documentType === "CNPJ" || linkedToCompany;
 
@@ -41,6 +58,7 @@ export function ClientFormModal({ client, onClose, onSaved }: Props) {
         legalArea,
         companyName: showCompanyField ? companyName : "",
         city,
+        phone: onlyDigits(phone),
       };
       const res = await fetch(client ? `/api/crm/clients/${client.id}` : "/api/crm/clients", {
         method: client ? "PATCH" : "POST",
@@ -140,14 +158,50 @@ export function ClientFormModal({ client, onClose, onSaved }: Props) {
           </div>
         )}
 
-        <div>
-          <label className="text-xs text-neutral-500">Cidade</label>
-          <input
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-neutral-500">Cidade</label>
+            <input
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-neutral-500">WhatsApp (com DDI/DDD)</label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="5511999999999"
+              className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+            />
+          </div>
         </div>
+
+        {client && messages && messages.length > 0 && (
+          <div>
+            <label className="text-xs text-neutral-500">Histórico de mensagens (WhatsApp)</label>
+            <div className="mt-1 max-h-56 overflow-y-auto rounded-md border border-neutral-200 dark:border-neutral-800 p-2 space-y-1.5 bg-neutral-50 dark:bg-neutral-950">
+              {messages.map((m) => (
+                <div key={m.id} className={`flex ${m.direction === "OUT" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[75%] rounded-lg px-2.5 py-1.5 text-xs ${
+                      m.direction === "OUT"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{m.body}</p>
+                    <p className={`text-[10px] mt-0.5 ${m.direction === "OUT" ? "text-emerald-100" : "text-neutral-400"}`}>
+                      {new Date(m.createdAt).toLocaleString("pt-BR")}
+                      {m.direction === "OUT" && m.status === "QUEUED" && " · na fila"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

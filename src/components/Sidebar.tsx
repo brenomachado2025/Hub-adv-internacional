@@ -12,13 +12,16 @@ import {
   Landmark,
   Receipt,
   Globe,
+  MessageCircle,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
+import { WhatsappStatusDot } from "@/components/WhatsappStatusDot";
 
 const NAV_ITEMS = [
   { href: "/", label: "Início", icon: Home },
   { href: "/crm", label: "CRM de Clientes", icon: Contact },
+  { href: "/whatsapp", label: "WhatsApp", icon: MessageCircle, statusDot: true },
   { href: "/sancoes", label: "Sanções (ONU/OFAC/UE)", icon: ShieldAlert },
   { href: "/notificacoes", label: "Notificações", icon: Bell },
   { href: "/auditoria", label: "Auditoria", icon: ClipboardList },
@@ -55,7 +58,8 @@ export function Sidebar() {
               }`}
             >
               <Icon size={18} strokeWidth={1.75} className="shrink-0" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.statusDot && <WhatsappStatusDot />}
             </Link>
           );
         })}

@@ -27,6 +27,9 @@ model User {
   notifications   Notification[]
   auditLogs       AuditLog[]
   crmClients      CrmClient[]
+  whatsappSession WhatsappSession?
+  whatsappMessages WhatsappMessage[]
+  whatsappStatusNotifications WhatsappStatusNotification[]
 }
 
 // ---------- Sanções ----------
@@ -180,14 +183,17 @@ model CrmClient {
   legalArea      String   @default("Outro")
   companyName    String   @default("")
   city           String   @default("")
+  phone          String   @default("") // apenas dígitos, com DDI (ex.: 5511999999999)
   status         String   @default("CONTACTED") // CONTACTED | INITIALIZED | IN_PROGRESS | FINISHED
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  statusHistory CrmStatusHistory[]
+  statusHistory     CrmStatusHistory[]
+  whatsappMessages  WhatsappMessage[]
 
   @@index([userId])
   @@index([userId, status])
+  @@index([userId, phone])
 }
 
 model CrmStatusHistory {
@@ -198,4 +204,81 @@ model CrmStatusHistory {
   changedAt DateTime  @default(now())
 
   @@index([clientId])
+}
+
+// ---------- Integração com WhatsApp (conexão não-oficial via QR Code) ----------
+
+model WhatsappSession {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          String    @default("DISCONNECTED") // DISCONNECTED | CONNECTING | CONNECTED
+  qrCode          String    @default("") // data URL base64 do QR atual, válido enquanto CONNECTING
+  phoneNumber     String    @default("")
+  lastConnectedAt DateTime?
+  lastError       String    @default("")
+  authState       String    @default("") // credenciais Baileys serializadas (JSON), permite reconectar sem novo QR
+  updatedAt       DateTime  @updatedAt
+}
+
+model WhatsappMessage {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crmClientId  String?
+  crmClient    CrmClient? @relation(fields: [crmClientId], references: [id], onDelete: SetNull)
+  phone        String
+  direction    String    // IN | OUT
+  body         String
+  status       String    @default("RECEIVED") // RECEIVED | QUEUED | SENT | FAILED
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([crmClientId])
+  @@index([userId, status])
+}
+
+model WhatsappConversationState {
+  id          String   @id @default(cuid())
+  userId      String
+  phone       String
+  crmClientId String?
+  step        String   @default("MENU") // MENU | COLLECT_NAME | COLLECT_AREA | COLLECT_CITY | DONE | HUMAN_HANDOFF
+  attempts    Int      @default(0)
+  data        String   @default("{}")
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, phone])
+}
+
+model WhatsappCommand {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // DISCONNECT | RECONNECT
+  status    String   @default("PENDING") // PENDING | DONE
+  createdAt DateTime @default(now())
+
+  @@index([userId, status])
+}
+
+model WhatsappErrorLog {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model WhatsappStatusNotification {
+  id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status  String  // CONTACTED | INITIALIZED | IN_PROGRESS | FINISHED
+  message String  @default("")
+  enabled Boolean @default(false)
+
+  @@unique([userId, status])
 }

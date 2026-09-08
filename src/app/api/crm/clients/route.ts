@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     legalArea,
     companyName,
     city,
+    phone,
     status,
   } = body as {
     fullName: string;
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
     legalArea?: string;
     companyName?: string;
     city?: string;
+    phone?: string;
     status?: string;
   };
 
@@ -72,6 +74,7 @@ export async function POST(req: NextRequest) {
       legalArea: legalArea ?? "Outro",
       companyName: companyName?.trim() ?? "",
       city: city?.trim() ?? "",
+      phone: onlyDigits(phone ?? ""),
       status: initialStatus,
       statusHistory: {
         create: { status: initialStatus },

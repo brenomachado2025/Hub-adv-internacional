@@ -36,6 +36,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     legalArea,
     companyName,
     city,
+    phone,
     status,
   } = body as {
     fullName?: string;
@@ -44,6 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     legalArea?: string;
     companyName?: string;
     city?: string;
+    phone?: string;
     status?: string;
   };
 
@@ -58,10 +60,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(legalArea !== undefined ? { legalArea } : {}),
       ...(companyName !== undefined ? { companyName: companyName.trim() } : {}),
       ...(city !== undefined ? { city: city.trim() } : {}),
+      ...(phone !== undefined ? { phone: onlyDigits(phone) } : {}),
       ...(status !== undefined ? { status } : {}),
       ...(newStatus ? { statusHistory: { create: { status: newStatus } } } : {}),
     },
   });
+
+  if (newStatus && client.phone) {
+    const hasIncomingMessage = await prisma.whatsappMessage.findFirst({
+      where: { crmClientId: client.id, direction: "IN" },
+    });
+    const notifConfig = await prisma.whatsappStatusNotification.findUnique({
+      where: { userId_status: { userId: user.userId, status: newStatus } },
+    });
+    if (hasIncomingMessage && notifConfig?.enabled && notifConfig.message.trim()) {
+      const delaySeconds = Math.floor(Math.random() * 26) + 5; // 5 a 30s, mesma humanização do bot
+      await prisma.whatsappMessage.create({
+        data: {
+          userId: user.userId,
+          crmClientId: client.id,
+          phone: client.phone,
+          direction: "OUT",
+          body: notifConfig.message,
+          status: "QUEUED",
+          scheduledFor: new Date(Date.now() + delaySeconds * 1000),
+        },
+      });
+    }
+  }
 
   return NextResponse.json({ client });
 }
