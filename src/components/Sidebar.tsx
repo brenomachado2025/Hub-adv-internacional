@@ -14,6 +14,7 @@ import {
   Globe,
   MessageCircle,
   Scale,
+  BarChart3,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: "/auditoria", label: "Auditoria", icon: ClipboardList },
   { href: "/honorarios", label: "Honorários & Câmbio", icon: Landmark },
   { href: "/faturas", label: "Faturas", icon: Receipt },
+  { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/reunioes", label: "Reuniões & Fusos", icon: Globe },
 ];
 

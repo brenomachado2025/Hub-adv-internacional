@@ -21,6 +21,15 @@ import {
 
 const prisma = new PrismaClient();
 
+// Falhas transitórias (ex.: instabilidade momentânea de rede/DB) não podem derrubar
+// a conexão do WhatsApp inteira - loga e continua rodando em vez de crashar.
+process.on("unhandledRejection", (err) => {
+  console.error(`[whatsapp-worker ${new Date().toISOString()}] Erro não tratado (ignorado):`, err);
+});
+process.on("uncaughtException", (err) => {
+  console.error(`[whatsapp-worker ${new Date().toISOString()}] Exceção não tratada (ignorado):`, err);
+});
+
 // Mantido em sincronia manualmente com src/lib/data/whatsapp-funnel.ts (usado pela
 // tela de configuração do funil). O worker roda com node puro, sem TypeScript.
 const DEFAULT_FUNNEL_MESSAGES = {
