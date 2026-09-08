@@ -9,6 +9,7 @@ export async function register() {
 
   const { syncAllSources } = await import("@/lib/sanctions/sync");
   const { checkLegalDeadlines } = await import("@/lib/legal/deadlines");
+  const { checkOverdueInstallments } = await import("@/lib/finance/billing");
 
   const runSync = () => {
     syncAllSources().catch((err) => {
@@ -28,4 +29,12 @@ export async function register() {
 
   setTimeout(runDeadlineCheck, 20_000);
   setInterval(runDeadlineCheck, SYNC_INTERVAL_MS);
+
+  const runOverdueCheck = () => {
+    checkOverdueInstallments().catch((err) => {
+      console.error("[internacional-hub] Falha ao verificar parcelas em atraso:", err);
+    });
+  };
+  setTimeout(runOverdueCheck, 25_000);
+  setInterval(runOverdueCheck, SYNC_INTERVAL_MS);
 }

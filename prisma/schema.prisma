@@ -37,6 +37,7 @@ model User {
 
   crmDocumentTemplates CrmDocumentTemplate[]
   legalCases           LegalCase[]
+  feeContracts         FeeContract[]
 }
 
 // ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------
@@ -199,6 +200,12 @@ model Invoice {
   dueDate       String   @default("")
   feeCalculationId String?
   feeCalculation   FeeCalculation? @relation(fields: [feeCalculationId], references: [id])
+  clientId      String? // vínculo opcional ao cliente do CRM
+  crmClient     CrmClient? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  caseId        String? // vínculo opcional ao processo
+  legalCase     LegalCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  installmentId String? // origem: gerada a partir de uma parcela de contrato de honorários
+  installment   FeeInstallment? @relation(fields: [installmentId], references: [id], onDelete: SetNull)
   createdAt     DateTime @default(now())
 
   items InvoiceLineItem[]
@@ -243,6 +250,8 @@ model CrmClient {
   documents         CrmDocument[]
   activities        CrmActivity[]
   legalCases        LegalCase[]
+  feeContracts      FeeContract[]
+  invoices          Invoice[]
 
   @@index([userId])
   @@index([userId, status])
@@ -268,8 +277,10 @@ model LegalCase {
   updatedAt  DateTime  @updatedAt
   closedAt   DateTime?
 
-  movements LegalCaseMovement[]
-  deadlines LegalCaseDeadline[]
+  movements    LegalCaseMovement[]
+  deadlines    LegalCaseDeadline[]
+  feeContracts FeeContract[]
+  invoices     Invoice[]
 
   @@index([userId])
   @@index([userId, status])
@@ -301,6 +312,46 @@ model LegalCaseDeadline {
   createdAt  DateTime  @default(now())
 
   @@index([caseId])
+  @@index([status, dueDate])
+}
+
+// ---------- Financeiro: contratos de honorários e parcelas ----------
+
+model FeeContract {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId    String
+  client      CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  caseId      String?
+  case        LegalCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  description String    @default("")
+  totalAmount Float
+  currency    String    @default("BRL")
+  status      String    @default("ACTIVE") // ACTIVE | CANCELLED | COMPLETED
+  createdAt   DateTime  @default(now())
+
+  installments FeeInstallment[]
+
+  @@index([userId])
+  @@index([clientId])
+}
+
+model FeeInstallment {
+  id          String      @id @default(cuid())
+  contractId  String
+  contract    FeeContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  number      Int
+  amount      Float
+  dueDate     DateTime
+  status      String      @default("PENDING") // PENDING | PAID | OVERDUE | CANCELLED
+  paidAt      DateTime?
+  paidAmount  Float?
+  createdAt   DateTime    @default(now())
+
+  invoices Invoice[]
+
+  @@index([contractId])
   @@index([status, dueDate])
 }
 

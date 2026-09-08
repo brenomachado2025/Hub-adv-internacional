@@ -15,8 +15,19 @@ import { DocumentsTab } from "./DocumentsTab";
 import { WhatsappTab } from "./WhatsappTab";
 import { ActivityTab } from "./ActivityTab";
 import { CasesTab } from "./CasesTab";
+import { FinanceTab } from "./FinanceTab";
 
-const TABS = ["Visão Geral", "Processos", "Notas", "Tarefas", "Reuniões", "Documentos", "WhatsApp", "Atividade"] as const;
+const TABS = [
+  "Visão Geral",
+  "Processos",
+  "Financeiro",
+  "Notas",
+  "Tarefas",
+  "Reuniões",
+  "Documentos",
+  "WhatsApp",
+  "Atividade",
+] as const;
 type Tab = (typeof TABS)[number];
 
 export function ClientDetail({ clientId }: { clientId: string }) {
@@ -144,6 +155,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
 
       {tab === "Visão Geral" && <OverviewTab client={client} />}
       {tab === "Processos" && <CasesTab clientId={clientId} />}
+      {tab === "Financeiro" && <FinanceTab clientId={clientId} />}
       {tab === "Notas" && <NotesTab clientId={clientId} />}
       {tab === "Tarefas" && <TasksTab clientId={clientId} />}
       {tab === "Reuniões" && <MeetingsTab clientId={clientId} />}

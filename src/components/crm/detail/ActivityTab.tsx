@@ -15,6 +15,7 @@ const TYPE_LABEL: Record<string, string> = {
   DUPLICATE: "Duplicação",
   CASE: "Processo",
   DEADLINE_ALERT: "Alerta de prazo",
+  BILLING: "Financeiro",
 };
 
 export function ActivityTab({ clientId }: { clientId: string }) {
