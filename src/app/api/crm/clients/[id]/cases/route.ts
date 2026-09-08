@@ -37,10 +37,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
   }
 
-  const { title, caseNumber, court } = (await req.json()) as {
+  const { title, caseNumber, court, tribunalAlias } = (await req.json()) as {
     title?: string;
     caseNumber?: string;
     court?: string;
+    tribunalAlias?: string;
   };
   if (!title?.trim()) return NextResponse.json({ error: "Título do processo é obrigatório" }, { status: 400 });
 
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       title: title.trim(),
       caseNumber: caseNumber?.trim() ?? "",
       court: court?.trim() ?? "",
+      tribunalAlias: tribunalAlias?.trim() ?? "",
     },
   });
 

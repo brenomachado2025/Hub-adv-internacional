@@ -300,7 +300,8 @@ model LegalCase {
   client     CrmClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
   caseNumber String    @default("") // número CNJ do processo, se houver
   title      String
-  court      String    @default("") // tribunal/vara
+  court      String    @default("") // tribunal/vara (texto livre, exibição)
+  tribunalAlias String @default("") // alias do tribunal na API DataJud (ex.: api_publica_tjsp), para consulta automática
   status     String    @default("ACTIVE") // ACTIVE | CLOSED | ARCHIVED
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

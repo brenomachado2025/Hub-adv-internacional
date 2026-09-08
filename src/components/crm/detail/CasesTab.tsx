@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { TRIBUNAL_OPTIONS } from "@/lib/legal/datajud";
 
 type Deadline = { id: string; title: string; dueDate: string; status: string; alertDays: string };
 type TimeEntry = {
@@ -17,11 +18,14 @@ type CaseItem = {
   title: string;
   caseNumber: string;
   court: string;
+  tribunalAlias: string;
   status: string;
   createdAt: string;
   deadlines: Deadline[];
   _count: { movements: number };
 };
+
+const TRIBUNAL_GROUPS = Array.from(new Set(TRIBUNAL_OPTIONS.map((t) => t.group)));
 
 const STATUS_LABEL: Record<string, string> = { ACTIVE: "Ativo", CLOSED: "Encerrado", ARCHIVED: "Arquivado" };
 
@@ -32,6 +36,7 @@ export function CasesTab({ clientId }: { clientId: string }) {
   const [title, setTitle] = useState("");
   const [caseNumber, setCaseNumber] = useState("");
   const [court, setCourt] = useState("");
+  const [tribunalAlias, setTribunalAlias] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -50,11 +55,12 @@ export function CasesTab({ clientId }: { clientId: string }) {
     await fetch(`/api/crm/clients/${clientId}/cases`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, caseNumber, court }),
+      body: JSON.stringify({ title, caseNumber, court, tribunalAlias }),
     });
     setTitle("");
     setCaseNumber("");
     setCourt("");
+    setTribunalAlias("");
     setSaving(false);
     setShowNew(false);
     load();
@@ -96,9 +102,25 @@ export function CasesTab({ clientId }: { clientId: string }) {
             <input
               value={court}
               onChange={(e) => setCourt(e.target.value)}
-              placeholder="Tribunal/Vara (opcional)"
+              placeholder="Vara/comarca (texto livre, opcional)"
               className="px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
             />
+            <select
+              value={tribunalAlias}
+              onChange={(e) => setTribunalAlias(e.target.value)}
+              className="sm:col-span-3 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+            >
+              <option value="">Tribunal (para consulta automática DataJud) — opcional</option>
+              {TRIBUNAL_GROUPS.map((group) => (
+                <optgroup key={group} label={group}>
+                  {TRIBUNAL_OPTIONS.filter((t) => t.group === group).map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
             <button
               onClick={createCase}
               disabled={saving || !title.trim()}
@@ -149,7 +171,7 @@ function CaseDetail({
   onChangeStatus: (caseId: string, status: string) => void;
   onReload: () => void;
 }) {
-  const [movements, setMovements] = useState<{ id: string; type: string; description: string; occurredAt: string }[]>([]);
+  const [movements, setMovements] = useState<{ id: string; type: string; description: string; occurredAt: string; source: string }[]>([]);
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [movementText, setMovementText] = useState("");
@@ -158,6 +180,11 @@ function CaseDetail({
   const [entryDescription, setEntryDescription] = useState("");
   const [entryHours, setEntryHours] = useState("");
   const [entryRate, setEntryRate] = useState("");
+  const [consultingDataJud, setConsultingDataJud] = useState(false);
+  const [dataJudMessage, setDataJudMessage] = useState("");
+  const [editingCaseInfo, setEditingCaseInfo] = useState(false);
+  const [editCaseNumber, setEditCaseNumber] = useState(legalCase.caseNumber);
+  const [editTribunalAlias, setEditTribunalAlias] = useState(legalCase.tribunalAlias);
 
   const load = useCallback(async () => {
     const [mRes, dRes, tRes] = await Promise.all([
@@ -208,6 +235,20 @@ function CaseDetail({
     onReload();
   };
 
+  const consultarDataJud = async () => {
+    setConsultingDataJud(true);
+    setDataJudMessage("");
+    const res = await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/consulta-datajud`, { method: "POST" });
+    const data = await res.json();
+    setDataJudMessage(
+      res.ok
+        ? data.message ?? `${data.imported} novo(s) andamento(s) importado(s).`
+        : data.error ?? "Erro ao consultar."
+    );
+    setConsultingDataJud(false);
+    load();
+  };
+
   const addTimeEntry = async () => {
     const hours = parseFloat(entryHours.replace(",", "."));
     if (!hours || hours <= 0) return;
@@ -229,6 +270,16 @@ function CaseDetail({
   const removeTimeEntry = async (entryId: string) => {
     await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries/${entryId}`, { method: "DELETE" });
     load();
+  };
+
+  const saveCaseInfo = async () => {
+    await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caseNumber: editCaseNumber, tribunalAlias: editTribunalAlias }),
+    });
+    setEditingCaseInfo(false);
+    onReload();
   };
 
   const totalHours = timeEntries.reduce((sum, e) => sum + e.hours, 0);
@@ -260,6 +311,49 @@ function CaseDetail({
           Reabrir processo
         </button>
       )}
+
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <h5 className="text-xs font-semibold uppercase text-neutral-400">Número CNJ / Tribunal</h5>
+          <button onClick={() => setEditingCaseInfo((v) => !v)} className="text-xs text-blue-600 hover:underline">
+            {editingCaseInfo ? "Cancelar" : "Editar"}
+          </button>
+        </div>
+        {editingCaseInfo ? (
+          <div className="grid sm:grid-cols-[1fr_2fr_auto] gap-2">
+            <input
+              value={editCaseNumber}
+              onChange={(e) => setEditCaseNumber(e.target.value)}
+              placeholder="Número CNJ"
+              className="px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+            />
+            <select
+              value={editTribunalAlias}
+              onChange={(e) => setEditTribunalAlias(e.target.value)}
+              className="px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+            >
+              <option value="">Sem tribunal selecionado</option>
+              {TRIBUNAL_GROUPS.map((group) => (
+                <optgroup key={group} label={group}>
+                  {TRIBUNAL_OPTIONS.filter((t) => t.group === group).map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <button onClick={saveCaseInfo} className="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-900 text-white text-xs">
+              Salvar
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-500">
+            {legalCase.caseNumber || "sem número"}
+            {legalCase.tribunalAlias && ` · ${TRIBUNAL_OPTIONS.find((t) => t.value === legalCase.tribunalAlias)?.label ?? legalCase.tribunalAlias}`}
+          </p>
+        )}
+      </div>
 
       <div>
         <h5 className="text-xs font-semibold uppercase text-neutral-400 mb-2">Prazos</h5>
@@ -302,7 +396,19 @@ function CaseDetail({
       </div>
 
       <div>
-        <h5 className="text-xs font-semibold uppercase text-neutral-400 mb-2">Andamentos</h5>
+        <div className="flex items-center justify-between mb-2">
+          <h5 className="text-xs font-semibold uppercase text-neutral-400">Andamentos</h5>
+          {legalCase.caseNumber && legalCase.tribunalAlias && (
+            <button
+              onClick={consultarDataJud}
+              disabled={consultingDataJud}
+              className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+            >
+              {consultingDataJud ? "Consultando..." : "Consultar tribunal (DataJud)"}
+            </button>
+          )}
+        </div>
+        {dataJudMessage && <p className="text-xs text-neutral-500 mb-2">{dataJudMessage}</p>}
         <div className="flex gap-2 mb-2">
           <input
             value={movementText}
@@ -319,7 +425,10 @@ function CaseDetail({
           {movements.map((m) => (
             <div key={m.id} className="text-sm bg-white dark:bg-neutral-900 rounded-md border border-neutral-200 dark:border-neutral-800 px-3 py-2">
               <p>{m.description}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">{new Date(m.occurredAt).toLocaleString("pt-BR")}</p>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                {new Date(m.occurredAt).toLocaleString("pt-BR")}
+                {m.source === "DATAJUD" && " · via DataJud"}
+              </p>
             </div>
           ))}
         </div>

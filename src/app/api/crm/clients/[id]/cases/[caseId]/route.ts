@@ -20,10 +20,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const existing = await loadOwnedCase(id, caseId, workspaceUserId);
   if (!existing) return NextResponse.json({ error: "Processo não encontrado" }, { status: 404 });
 
-  const { title, caseNumber, court, status } = (await req.json()) as {
+  const { title, caseNumber, court, tribunalAlias, status } = (await req.json()) as {
     title?: string;
     caseNumber?: string;
     court?: string;
+    tribunalAlias?: string;
     status?: string;
   };
 
@@ -37,6 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(title !== undefined ? { title: title.trim() } : {}),
       ...(caseNumber !== undefined ? { caseNumber: caseNumber.trim() } : {}),
       ...(court !== undefined ? { court: court.trim() } : {}),
+      ...(tribunalAlias !== undefined ? { tribunalAlias: tribunalAlias.trim() } : {}),
       ...(status !== undefined ? { status, closedAt: status === "ACTIVE" ? null : new Date() } : {}),
     },
   });
