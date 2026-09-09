@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://hubinternacional.com.br"),
   title: "Internacional Hub | Sanções Internacionais",
   description: "Monitoramento de sanções (ONU/OFAC/UE), auditoria, honorários multi-moeda, faturamento e agendamento multi-fuso.",
 };

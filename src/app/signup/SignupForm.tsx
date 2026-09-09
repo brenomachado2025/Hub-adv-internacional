@@ -36,7 +36,7 @@ export function SignupForm() {
         const data = await res.json();
         throw new Error(data.error ?? "Falha ao criar conta");
       }
-      router.push("/");
+      router.push("/dashboard");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");

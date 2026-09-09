@@ -22,7 +22,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { WhatsappStatusDot } from "@/components/WhatsappStatusDot";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Início", icon: Home },
+  { href: "/dashboard", label: "Início", icon: Home },
   { href: "/crm", label: "CRM de Clientes", icon: Contact },
   { href: "/processos", label: "Processos", icon: Scale },
   { href: "/whatsapp", label: "WhatsApp", icon: MessageCircle, statusDot: true },

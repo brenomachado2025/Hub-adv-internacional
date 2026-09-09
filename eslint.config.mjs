@@ -13,6 +13,17 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // react-three-fiber's whole animation model is refs mutated per frame in
+    // useFrame, which the React Compiler-oriented "refs during render" /
+    // "purity" rules aren't designed for. These files never run through the
+    // compiler's component model the same way plain DOM components do.
+    files: ["src/components/landing/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/refs": "off",
+      "react-hooks/purity": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
