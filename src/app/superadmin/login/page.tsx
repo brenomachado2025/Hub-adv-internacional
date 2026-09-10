@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function SuperadminLoginPage() {
   const router = useRouter();
@@ -60,12 +61,13 @@ export default function SuperadminLoginPage() {
 
         <div>
           <label className="text-xs text-zinc-500">Senha</label>
-          <input
-            type="password"
+          <PasswordInput
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full mt-1 px-3 py-2 rounded-md border border-red-950 bg-black text-sm text-white"
+            className="mt-1"
+            inputClassName="px-3 py-2 rounded-md border border-red-950 bg-black text-sm text-white"
+            iconClassName="text-zinc-500 hover:text-zinc-300"
           />
         </div>
 

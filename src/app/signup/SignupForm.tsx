@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export function SignupForm() {
   const router = useRouter();
@@ -98,24 +99,24 @@ export function SignupForm() {
 
       <div>
         <label className="text-xs text-neutral-500">Senha (mínimo 8 caracteres)</label>
-        <input
-          type="password"
+        <PasswordInput
           required
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+          className="mt-1"
+          inputClassName="px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
         />
       </div>
 
       <div>
         <label className="text-xs text-neutral-500">Confirmar senha</label>
-        <input
-          type="password"
+        <PasswordInput
           required
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="w-full mt-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
+          className="mt-1"
+          inputClassName="px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent text-sm"
         />
       </div>
 
