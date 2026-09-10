@@ -11,7 +11,7 @@ import { SupportChat } from "@/components/SupportChat";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (pathname === "/" || pathname === "/login" || pathname === "/signup") {
+  if (pathname === "/" || pathname === "/login" || pathname === "/signup" || pathname.startsWith("/superadmin")) {
     return <>{children}</>;
   }
 

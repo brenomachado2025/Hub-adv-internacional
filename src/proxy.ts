@@ -1,13 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
+import { COOKIE_NAME as SUPERADMIN_COOKIE_NAME, verifySuperadminToken } from "@/lib/auth/superadmin-session";
 
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/robots.txt", "/sitemap.xml"];
-const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/auth/signup", "/api/auth/logout", "/api/auth/me"];
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/robots.txt", "/sitemap.xml", "/superadmin/login"];
+const PUBLIC_PREFIXES = ["/scenes/"];
+const PUBLIC_API_PREFIXES = [
+  "/api/auth/login",
+  "/api/auth/signup",
+  "/api/auth/logout",
+  "/api/auth/me",
+  "/api/superadmin/login",
+];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (PUBLIC_PATHS.includes(pathname) || PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p))) {
+  if (
+    PUBLIC_PATHS.includes(pathname) ||
+    PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) ||
+    PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p))
+  ) {
+    return NextResponse.next();
+  }
+
+  // O painel super-admin tem login e sessão totalmente separados do login normal
+  // de usuário - não passa pela checagem de hub_session abaixo.
+  if (pathname.startsWith("/superadmin") || pathname.startsWith("/api/superadmin")) {
+    const token = req.cookies.get(SUPERADMIN_COOKIE_NAME)?.value;
+    const superadmin = token ? await verifySuperadminToken(token) : null;
+    if (!superadmin) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+      }
+      return NextResponse.redirect(new URL("/superadmin/login", req.url));
+    }
     return NextResponse.next();
   }
 
