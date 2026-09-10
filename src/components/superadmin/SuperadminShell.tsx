@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { LogOut, Users, Activity, ScrollText } from "lucide-react";
 
 const NAV = [
@@ -12,11 +12,12 @@ const NAV = [
 
 export function SuperadminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const logout = async () => {
     await fetch("/api/superadmin/logout", { method: "POST" });
-    router.push("/dashboard");
+    // Navegação de página cheia: evita servir do cache de rota do Next.js uma
+    // versão antiga de /dashboard renderizada para outra conta/sessão.
+    window.location.href = "/dashboard";
   };
 
   return (
@@ -43,12 +44,12 @@ export function SuperadminShell({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
-            <Link
-              href="/dashboard"
+            <a
+              href="/api/superadmin/enter-workspace"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-red-950/60"
             >
               Voltar ao Hub
-            </Link>
+            </a>
             <button
               onClick={logout}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-red-950/60"
