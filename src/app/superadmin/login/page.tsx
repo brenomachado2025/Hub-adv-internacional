@@ -49,13 +49,14 @@ export default function SuperadminLoginPage() {
         </div>
 
         <div>
-          <label className="text-xs text-zinc-500">Usuário</label>
+          <label className="text-xs text-zinc-500">Usuário (não é seu e-mail — é um login fixo separado)</label>
           <input
             required
             autoFocus
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full mt-1 px-3 py-2 rounded-md border border-red-950 bg-black text-sm text-white"
+            placeholder="hub_master"
+            className="w-full mt-1 px-3 py-2 rounded-md border border-red-950 bg-black text-sm text-white placeholder:text-zinc-600"
           />
         </div>
 
