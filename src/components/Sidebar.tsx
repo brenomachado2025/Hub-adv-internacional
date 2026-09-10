@@ -18,6 +18,7 @@ import {
   BarChart3,
   Zap,
   Lock,
+  MessagesSquare,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { href: "/crm", label: "CRM de Clientes", icon: Contact },
   { href: "/processos", label: "Processos", icon: Scale },
   { href: "/whatsapp", label: "WhatsApp", icon: MessageCircle, statusDot: true },
+  { href: "/chat-equipe", label: "Chat da Equipe", icon: MessagesSquare },
   { href: "/sancoes", label: "Sanções (ONU/OFAC/UE)", icon: ShieldAlert },
   { href: "/notificacoes", label: "Notificações", icon: Bell },
   { href: "/auditoria", label: "Auditoria", icon: ClipboardList },

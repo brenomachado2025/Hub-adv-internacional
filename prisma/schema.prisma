@@ -84,6 +84,19 @@ model TeamInvite {
   @@index([email])
 }
 
+// Chat interno da equipe (sala única por workspace, entre dono e membros
+// convidados) - separado do WhatsApp, que é para conversas com clientes.
+model TeamChatMessage {
+  id          String   @id @default(cuid())
+  teamOwnerId String   // identifica o workspace (mesmo id usado por getWorkspaceOwnerId)
+  authorId    String
+  authorName  String   @default("")
+  text        String
+  createdAt   DateTime @default(now())
+
+  @@index([teamOwnerId, createdAt])
+}
+
 // ---------- Sanções ----------
 
 model SanctionEntry {
