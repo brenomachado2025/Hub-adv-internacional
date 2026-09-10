@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,6 +17,7 @@ import {
   Scale,
   BarChart3,
   Zap,
+  Lock,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
@@ -38,6 +40,13 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(data.user?.role === "ADMIN"));
+  }, []);
 
   return (
     <aside className="w-64 shrink-0 min-h-screen flex flex-col bg-[#0e1b30] text-slate-300">
@@ -70,6 +79,20 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {isAdmin && (
+        <div className="p-3 border-t border-white/10">
+          <Link
+            href="/superadmin"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-black border border-red-900 text-red-500 hover:bg-red-950 hover:text-red-400 transition-colors"
+          >
+            <Lock size={18} strokeWidth={1.75} className="shrink-0" />
+            <span className="flex-1">ADM</span>
+          </Link>
+        </div>
+      )}
 
       <div className="p-3 border-t border-white/10 space-y-1">
         <ThemeToggle />
