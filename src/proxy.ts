@@ -23,21 +23,13 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // O painel super-admin aceita dois caminhos de acesso: o login fixo separado
-  // (hub_superadmin_session) ou a própria sessão normal do Hub, desde que a conta
-  // tenha role=ADMIN - assim a conta admin entra direto, sem logar de novo.
+  // O painel super-admin exige sempre o login fixo separado (hub_superadmin_session) -
+  // nenhuma conta de e-mail/senha do Hub dá acesso, nem mesmo role=ADMIN.
   if (pathname.startsWith("/superadmin") || pathname.startsWith("/api/superadmin")) {
     const superadminToken = req.cookies.get(SUPERADMIN_COOKIE_NAME)?.value;
     const superadmin = superadminToken ? await verifySuperadminToken(superadminToken) : null;
 
-    let hasAdminRoleSession = false;
     if (!superadmin) {
-      const userToken = req.cookies.get(COOKIE_NAME)?.value;
-      const session = userToken ? await verifySessionToken(userToken) : null;
-      hasAdminRoleSession = session?.role === "ADMIN";
-    }
-
-    if (!superadmin && !hasAdminRoleSession) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
       }
