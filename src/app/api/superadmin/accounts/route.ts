@@ -32,6 +32,7 @@ export async function GET() {
     feeContractsCount: u._count.feeContracts,
     whatsappStatus: u.whatsappSession?.status ?? null,
     whatsappPhone: u.whatsappSession?.phoneNumber ?? null,
+    suspended: u.suspended,
   }));
 
   return NextResponse.json({ accounts });

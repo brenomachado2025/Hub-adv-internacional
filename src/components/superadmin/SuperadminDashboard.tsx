@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { SuperadminShell } from "./SuperadminShell";
 
 type Account = {
   id: string;
@@ -21,22 +20,32 @@ type Account = {
   feeContractsCount: number;
   whatsappStatus: string | null;
   whatsappPhone: string | null;
+  suspended: boolean;
 };
 
 export function SuperadminDashboard() {
-  const router = useRouter();
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
+  const load = useCallback(() => {
     fetch("/api/superadmin/accounts")
       .then((res) => res.json())
       .then((data) => setAccounts(data.accounts ?? []));
   }, []);
 
-  const logout = async () => {
-    await fetch("/api/superadmin/logout", { method: "POST" });
-    router.push("/superadmin/login");
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const toggleSuspend = async (account: Account) => {
+    const next = !account.suspended;
+    if (next && !confirm(`Suspender o acesso de ${account.email}? Ela não vai conseguir mais fazer login.`)) return;
+    await fetch(`/api/superadmin/accounts/${account.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ suspended: next }),
+    });
+    load();
   };
 
   const filtered = (accounts ?? []).filter(
@@ -50,42 +59,34 @@ export function SuperadminDashboard() {
   const members = filtered.filter((a) => a.isTeamMember);
 
   return (
-    <div className="min-h-screen bg-[#0a0f1a] text-slate-200 p-6 md:p-10">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white">Painel Super-Admin</h1>
-            <p className="text-sm text-slate-400 mt-1">
-              {accounts ? `${accounts.length} conta(s) no Internacional Hub` : "Carregando..."}
-            </p>
-          </div>
-          <button
-            onClick={logout}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/10 text-sm hover:bg-white/5"
-          >
-            <LogOut size={14} /> Sair
-          </button>
+    <SuperadminShell>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-bold text-white">Contas do Hub</h2>
+          <p className="text-sm text-zinc-400 mt-1">
+            {accounts ? `${accounts.length} conta(s) no total` : "Carregando..."}
+          </p>
         </div>
 
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nome ou e-mail..."
-          className="w-full max-w-md px-3 py-2 rounded-md border border-white/10 bg-white/5 text-sm"
+          className="w-full max-w-md px-3 py-2 rounded-md border border-zinc-800 bg-zinc-900 text-sm placeholder:text-zinc-600"
         />
 
         {!accounts ? (
-          <p className="text-sm text-slate-400">Carregando contas...</p>
+          <p className="text-sm text-zinc-400">Carregando contas...</p>
         ) : (
           <>
             <section>
-              <h2 className="text-sm font-semibold text-slate-400 uppercase mb-2">
+              <h3 className="text-sm font-semibold text-zinc-400 uppercase mb-2">
                 Contas principais (donas de workspace)
-              </h2>
-              <div className="rounded-lg border border-white/10 overflow-x-auto">
+              </h3>
+              <div className="rounded-lg border border-zinc-800 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-slate-400 border-b border-white/10">
+                    <tr className="text-left text-zinc-500 border-b border-zinc-800">
                       <th className="py-2 px-3">Conta</th>
                       <th className="py-2 px-3">Cadastro</th>
                       <th className="py-2 px-3">Equipe</th>
@@ -98,12 +99,19 @@ export function SuperadminDashboard() {
                   </thead>
                   <tbody>
                     {owners.map((a) => (
-                      <tr key={a.id} className="border-b border-white/5">
+                      <tr key={a.id} className="border-b border-zinc-900">
                         <td className="py-2 px-3">
-                          <p className="font-medium">{a.name || "-"}</p>
-                          <p className="text-xs text-slate-400">{a.email}</p>
+                          <p className="font-medium flex items-center gap-2">
+                            {a.name || "-"}
+                            {a.suspended && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-950 text-red-400 border border-red-900">
+                                suspensa
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-zinc-500">{a.email}</p>
                         </td>
-                        <td className="py-2 px-3 whitespace-nowrap text-slate-400">
+                        <td className="py-2 px-3 whitespace-nowrap text-zinc-500">
                           {new Date(a.createdAt).toLocaleDateString("pt-BR")}
                         </td>
                         <td className="py-2 px-3">{a.teamMembersCount > 0 ? `${a.teamMembersCount} membro(s)` : "-"}</td>
@@ -114,19 +122,25 @@ export function SuperadminDashboard() {
                           {a.whatsappStatus === "CONNECTED" ? (
                             <span className="text-emerald-400">Conectado</span>
                           ) : (
-                            <span className="text-slate-500">-</span>
+                            <span className="text-zinc-600">-</span>
                           )}
                         </td>
-                        <td className="py-2 px-3">
-                          <Link href={`/superadmin/${a.id}`} className="text-blue-400 hover:underline text-xs">
-                            Ver detalhes
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          <button
+                            onClick={() => toggleSuspend(a)}
+                            className={`text-xs mr-3 hover:underline ${a.suspended ? "text-emerald-400" : "text-amber-400"}`}
+                          >
+                            {a.suspended ? "Reativar" : "Suspender"}
+                          </button>
+                          <Link href={`/superadmin/${a.id}`} className="text-amber-400 hover:underline text-xs">
+                            Detalhes
                           </Link>
                         </td>
                       </tr>
                     ))}
                     {owners.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="py-6 text-center text-slate-500">
+                        <td colSpan={8} className="py-6 text-center text-zinc-600">
                           Nenhuma conta encontrada.
                         </td>
                       </tr>
@@ -138,11 +152,11 @@ export function SuperadminDashboard() {
 
             {members.length > 0 && (
               <section>
-                <h2 className="text-sm font-semibold text-slate-400 uppercase mb-2">Membros de equipe</h2>
-                <div className="rounded-lg border border-white/10 overflow-x-auto">
+                <h3 className="text-sm font-semibold text-zinc-400 uppercase mb-2">Membros de equipe</h3>
+                <div className="rounded-lg border border-zinc-800 overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-slate-400 border-b border-white/10">
+                      <tr className="text-left text-zinc-500 border-b border-zinc-800">
                         <th className="py-2 px-3">Conta</th>
                         <th className="py-2 px-3">Membro da equipe de</th>
                         <th className="py-2 px-3">Cadastro</th>
@@ -151,18 +165,18 @@ export function SuperadminDashboard() {
                     </thead>
                     <tbody>
                       {members.map((a) => (
-                        <tr key={a.id} className="border-b border-white/5">
+                        <tr key={a.id} className="border-b border-zinc-900">
                           <td className="py-2 px-3">
                             <p className="font-medium">{a.name || "-"}</p>
-                            <p className="text-xs text-slate-400">{a.email}</p>
+                            <p className="text-xs text-zinc-500">{a.email}</p>
                           </td>
-                          <td className="py-2 px-3 text-slate-400">{a.teamOwnerEmail}</td>
-                          <td className="py-2 px-3 whitespace-nowrap text-slate-400">
+                          <td className="py-2 px-3 text-zinc-400">{a.teamOwnerEmail}</td>
+                          <td className="py-2 px-3 whitespace-nowrap text-zinc-500">
                             {new Date(a.createdAt).toLocaleDateString("pt-BR")}
                           </td>
                           <td className="py-2 px-3">
-                            <Link href={`/superadmin/${a.id}`} className="text-blue-400 hover:underline text-xs">
-                              Ver detalhes
+                            <Link href={`/superadmin/${a.id}`} className="text-amber-400 hover:underline text-xs">
+                              Detalhes
                             </Link>
                           </td>
                         </tr>
@@ -175,6 +189,6 @@ export function SuperadminDashboard() {
           </>
         )}
       </div>
-    </div>
+    </SuperadminShell>
   );
 }

@@ -20,6 +20,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "E-mail ou senha inválidos" }, { status: 401 });
   }
 
+  if (user.suspended) {
+    return NextResponse.json({ error: "Esta conta foi suspensa. Entre em contato com o suporte." }, { status: 403 });
+  }
+
   const token = await createSessionToken({
     userId: user.id,
     email: user.email,

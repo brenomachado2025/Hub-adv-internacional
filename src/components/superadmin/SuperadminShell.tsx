@@ -1,0 +1,58 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut, Users, Activity, ScrollText } from "lucide-react";
+
+const NAV = [
+  { href: "/superadmin", label: "Contas", icon: Users },
+  { href: "/superadmin/saude", label: "Saúde do sistema", icon: Activity },
+  { href: "/superadmin/auditoria", label: "Auditoria", icon: ScrollText },
+] as const;
+
+export function SuperadminShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const logout = async () => {
+    await fetch("/api/superadmin/logout", { method: "POST" });
+    router.push("/superadmin/login");
+  };
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-200">
+      <header className="border-b border-zinc-800 bg-zinc-900/60">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <h1 className="text-sm font-bold text-white tracking-wide">SUPER-ADMIN · Internacional Hub</h1>
+          </div>
+          <nav className="flex items-center gap-1">
+            {NAV.map((item) => {
+              const active = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm ${
+                    active ? "bg-amber-500 text-zinc-950 font-medium" : "text-zinc-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <Icon size={14} /> {item.label}
+                </Link>
+              );
+            })}
+            <button
+              onClick={logout}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-white/5"
+            >
+              <LogOut size={14} /> Sair
+            </button>
+          </nav>
+        </div>
+      </header>
+      <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
+    </div>
+  );
+}

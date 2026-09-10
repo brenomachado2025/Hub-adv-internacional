@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSuperadminToken, COOKIE_NAME, SESSION_DURATION_SECONDS } from "@/lib/auth/superadmin-session";
 
@@ -21,6 +22,11 @@ export async function POST(req: NextRequest) {
   }
 
   const token = await createSuperadminToken(username);
+
+  await prisma.superadminAuditLog.create({
+    data: { action: "LOGIN", targetEmail: username },
+  });
+
   const res = NextResponse.json({ ok: true });
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,

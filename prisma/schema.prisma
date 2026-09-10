@@ -20,6 +20,8 @@ model User {
   title        String   @default("") // "Sr." | "Sra." | "" (tratamento exibido no topo do app)
   passwordHash String
   role         String   @default("CLIENT") // ADMIN | CLIENT
+  suspended    Boolean  @default(false) // bloqueado pelo painel super-admin, impede login
+  suspendedAt  DateTime?
   createdAt    DateTime @default(now())
 
   invoices        Invoice[]
@@ -158,6 +160,19 @@ model AuditLog {
   createdAt    DateTime @default(now())
 
   @@index([userId])
+}
+
+// Log de auditoria exclusivo do painel super-admin (/superadmin) - separado do
+// AuditLog de clientes para não misturar ação administrativa com ação de conta.
+model SuperadminAuditLog {
+  id           String   @id @default(cuid())
+  action       String   // LOGIN | SUSPEND | UNSUSPEND | DELETE_ACCOUNT
+  targetEmail  String   @default("")
+  targetUserId String   @default("")
+  details      String   @default("")
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 // ---------- Honorários / Câmbio ----------
