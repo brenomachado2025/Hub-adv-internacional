@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { PasswordInput } from "@/components/PasswordInput";
 
 export default function SuperadminLoginPage() {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +23,12 @@ export default function SuperadminLoginPage() {
         const data = await res.json();
         throw new Error(data.error ?? "Falha ao entrar");
       }
-      router.push("/superadmin");
-      router.refresh();
+      // Navegação client-side (router.push) podia ficar presa num cache de rota
+      // antigo, apontando de volta pro login mesmo com o cookie já setado.
+      // Um redirecionamento de página cheia evita isso de vez.
+      window.location.href = "/superadmin";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
-    } finally {
       setLoading(false);
     }
   };

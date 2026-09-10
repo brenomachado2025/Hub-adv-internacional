@@ -4,7 +4,10 @@ import { verifyPassword } from "@/lib/auth/password";
 import { createSuperadminToken, COOKIE_NAME, SESSION_DURATION_SECONDS } from "@/lib/auth/superadmin-session";
 
 export async function POST(req: NextRequest) {
-  const { username, password } = (await req.json()) as { username?: string; password?: string };
+  const body = (await req.json()) as { username?: string; password?: string };
+  // Tolera espaço extra no começo/fim (comum em teclado de celular e autocomplete).
+  const username = body.username?.trim();
+  const password = body.password?.trim();
 
   const expectedUsername = process.env.SUPERADMIN_USERNAME;
   const expectedHash = process.env.SUPERADMIN_PASSWORD_HASH;
