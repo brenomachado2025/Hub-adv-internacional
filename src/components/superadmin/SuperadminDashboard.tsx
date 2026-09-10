@@ -72,7 +72,7 @@ export function SuperadminDashboard() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nome ou e-mail..."
-          className="w-full max-w-md px-3 py-2 rounded-md border border-zinc-800 bg-zinc-900 text-sm placeholder:text-zinc-600"
+          className="w-full max-w-md px-3 py-2 rounded-md border border-red-950 bg-zinc-950 text-sm placeholder:text-zinc-600"
         />
 
         {!accounts ? (
@@ -83,10 +83,10 @@ export function SuperadminDashboard() {
               <h3 className="text-sm font-semibold text-zinc-400 uppercase mb-2">
                 Contas principais (donas de workspace)
               </h3>
-              <div className="rounded-lg border border-zinc-800 overflow-x-auto">
+              <div className="rounded-lg border border-red-950 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-zinc-500 border-b border-zinc-800">
+                    <tr className="text-left text-zinc-500 border-b border-red-950">
                       <th className="py-2 px-3">Conta</th>
                       <th className="py-2 px-3">Cadastro</th>
                       <th className="py-2 px-3">Equipe</th>
@@ -128,11 +128,11 @@ export function SuperadminDashboard() {
                         <td className="py-2 px-3 whitespace-nowrap">
                           <button
                             onClick={() => toggleSuspend(a)}
-                            className={`text-xs mr-3 hover:underline ${a.suspended ? "text-emerald-400" : "text-amber-400"}`}
+                            className={`text-xs mr-3 hover:underline ${a.suspended ? "text-emerald-400" : "text-red-500"}`}
                           >
                             {a.suspended ? "Reativar" : "Suspender"}
                           </button>
-                          <Link href={`/superadmin/${a.id}`} className="text-amber-400 hover:underline text-xs">
+                          <Link href={`/superadmin/${a.id}`} className="text-red-500 hover:underline text-xs">
                             Detalhes
                           </Link>
                         </td>
@@ -153,10 +153,10 @@ export function SuperadminDashboard() {
             {members.length > 0 && (
               <section>
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase mb-2">Membros de equipe</h3>
-                <div className="rounded-lg border border-zinc-800 overflow-x-auto">
+                <div className="rounded-lg border border-red-950 overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-zinc-500 border-b border-zinc-800">
+                      <tr className="text-left text-zinc-500 border-b border-red-950">
                         <th className="py-2 px-3">Conta</th>
                         <th className="py-2 px-3">Membro da equipe de</th>
                         <th className="py-2 px-3">Cadastro</th>
@@ -175,7 +175,7 @@ export function SuperadminDashboard() {
                             {new Date(a.createdAt).toLocaleDateString("pt-BR")}
                           </td>
                           <td className="py-2 px-3">
-                            <Link href={`/superadmin/${a.id}`} className="text-amber-400 hover:underline text-xs">
+                            <Link href={`/superadmin/${a.id}`} className="text-red-500 hover:underline text-xs">
                               Detalhes
                             </Link>
                           </td>

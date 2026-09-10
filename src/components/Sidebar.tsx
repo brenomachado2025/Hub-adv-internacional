@@ -84,8 +84,6 @@ export function Sidebar() {
         <div className="p-3 border-t border-white/10">
           <Link
             href="/superadmin"
-            target="_blank"
-            rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-black border border-red-900 text-red-500 hover:bg-red-950 hover:text-red-400 transition-colors"
           >
             <Lock size={18} strokeWidth={1.75} className="shrink-0" />

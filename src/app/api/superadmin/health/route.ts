@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentSuperadmin } from "@/lib/auth/superadmin-session";
+import { getSuperadminAccess } from "@/lib/auth/superadmin-session";
 
 export async function GET() {
-  const superadmin = await getCurrentSuperadmin();
+  const superadmin = await getSuperadminAccess();
   if (!superadmin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const [whatsappSessions, recentSyncRuns, pendingDeadlines, overdueInstallments] = await Promise.all([

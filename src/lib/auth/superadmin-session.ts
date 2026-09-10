@@ -42,4 +42,18 @@ export async function getCurrentSuperadmin(): Promise<{ username: string } | nul
   return verifySuperadminToken(token);
 }
 
+// Acesso ao painel admin por dois caminhos: o login fixo separado (hub_superadmin_session)
+// ou a própria sessão normal do Hub, desde que a conta tenha role=ADMIN - permite que a
+// conta admin entre direto, sem precisar logar de novo, mantendo o login fixo como opção.
+export async function getSuperadminAccess(): Promise<{ via: "fixed" | "admin-role"; identity: string } | null> {
+  const fixed = await getCurrentSuperadmin();
+  if (fixed) return { via: "fixed", identity: fixed.username };
+
+  const { getCurrentUser } = await import("./current-user");
+  const user = await getCurrentUser();
+  if (user && user.role === "ADMIN") return { via: "admin-role", identity: user.email };
+
+  return null;
+}
+
 export { COOKIE_NAME, SESSION_DURATION_SECONDS };

@@ -13,10 +13,10 @@ type LogEntry = {
 };
 
 const ACTION_LABEL: Record<string, { label: string; color: string }> = {
-  LOGIN: { label: "Login no painel", color: "text-blue-400" },
-  SUSPEND: { label: "Suspendeu conta", color: "text-amber-400" },
+  LOGIN: { label: "Login no painel", color: "text-red-300" },
+  SUSPEND: { label: "Suspendeu conta", color: "text-red-500" },
   UNSUSPEND: { label: "Reativou conta", color: "text-emerald-400" },
-  DELETE_ACCOUNT: { label: "Excluiu conta", color: "text-red-400" },
+  DELETE_ACCOUNT: { label: "Excluiu conta", color: "text-red-600" },
 };
 
 export function SuperadminAuditLog() {
@@ -37,7 +37,7 @@ export function SuperadminAuditLog() {
         {!logs ? (
           <p className="text-sm text-zinc-400">Carregando...</p>
         ) : (
-          <div className="rounded-lg border border-zinc-800 divide-y divide-zinc-900">
+          <div className="rounded-lg border border-red-950 divide-y divide-red-950/60">
             {logs.length === 0 && <p className="p-4 text-sm text-zinc-500">Nenhum registro ainda.</p>}
             {logs.map((l) => {
               const a = ACTION_LABEL[l.action] ?? { label: l.action, color: "text-zinc-300" };
@@ -46,6 +46,7 @@ export function SuperadminAuditLog() {
                   <div>
                     <span className={`font-medium ${a.color}`}>{a.label}</span>
                     {l.targetEmail && <span className="text-zinc-400 ml-2">{l.targetEmail}</span>}
+                    {l.details && <span className="text-zinc-600 ml-2 text-xs">({l.details})</span>}
                   </div>
                   <span className="text-xs text-zinc-500">{new Date(l.createdAt).toLocaleString("pt-BR")}</span>
                 </div>

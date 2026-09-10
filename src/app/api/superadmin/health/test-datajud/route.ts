@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getCurrentSuperadmin } from "@/lib/auth/superadmin-session";
+import { getSuperadminAccess } from "@/lib/auth/superadmin-session";
 import { queryDataJudProcess } from "@/lib/legal/datajud";
 
 export async function POST() {
-  const superadmin = await getCurrentSuperadmin();
+  const superadmin = await getSuperadminAccess();
   if (!superadmin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   try {

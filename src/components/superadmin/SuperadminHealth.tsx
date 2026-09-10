@@ -59,15 +59,15 @@ export function SuperadminHealth() {
         <h2 className="text-lg font-bold text-white">Saúde do sistema</h2>
 
         <div className="grid sm:grid-cols-3 gap-3">
-          <div className="rounded-lg border border-zinc-800 p-4">
+          <div className="rounded-lg border border-red-950 p-4">
             <div className="text-2xl font-bold text-white">{health.whatsappSessions.filter((s) => s.status === "CONNECTED").length}</div>
             <div className="text-xs text-zinc-400 mt-1">WhatsApp conectados</div>
           </div>
-          <div className="rounded-lg border border-zinc-800 p-4">
-            <div className="text-2xl font-bold text-amber-400">{health.pendingDeadlines}</div>
+          <div className="rounded-lg border border-red-950 p-4">
+            <div className="text-2xl font-bold text-red-500">{health.pendingDeadlines}</div>
             <div className="text-xs text-zinc-400 mt-1">Prazos processuais pendentes</div>
           </div>
-          <div className="rounded-lg border border-zinc-800 p-4">
+          <div className="rounded-lg border border-red-950 p-4">
             <div className="text-2xl font-bold text-red-400">{health.overdueInstallments}</div>
             <div className="text-xs text-zinc-400 mt-1">Parcelas em atraso</div>
           </div>
@@ -75,10 +75,10 @@ export function SuperadminHealth() {
 
         <section>
           <h3 className="text-sm font-semibold text-zinc-400 uppercase mb-2">Conexões WhatsApp</h3>
-          <div className="rounded-lg border border-zinc-800 overflow-x-auto">
+          <div className="rounded-lg border border-red-950 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-zinc-500 border-b border-zinc-800">
+                <tr className="text-left text-zinc-500 border-b border-red-950">
                   <th className="py-2 px-3">Conta</th>
                   <th className="py-2 px-3">Status</th>
                   <th className="py-2 px-3">Número</th>
@@ -110,10 +110,10 @@ export function SuperadminHealth() {
 
         <section>
           <h3 className="text-sm font-semibold text-zinc-400 uppercase mb-2">Sincronização de sanções (ONU/OFAC/UE)</h3>
-          <div className="rounded-lg border border-zinc-800 overflow-x-auto">
+          <div className="rounded-lg border border-red-950 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-zinc-500 border-b border-zinc-800">
+                <tr className="text-left text-zinc-500 border-b border-red-950">
                   <th className="py-2 px-3">Fonte</th>
                   <th className="py-2 px-3">Status</th>
                   <th className="py-2 px-3">Entradas</th>
@@ -145,7 +145,7 @@ export function SuperadminHealth() {
 
         <section>
           <h3 className="text-sm font-semibold text-zinc-400 uppercase mb-2">Chaves de API externas</h3>
-          <div className="rounded-lg border border-zinc-800 p-4 space-y-3 text-sm">
+          <div className="rounded-lg border border-red-950 p-4 space-y-3 text-sm">
             <div className="flex items-center justify-between">
               <span>Anthropic (assistente de chat)</span>
               <span className={health.apiKeys.anthropic ? "text-emerald-400" : "text-red-400"}>
@@ -161,7 +161,7 @@ export function SuperadminHealth() {
                 <button
                   onClick={testDataJud}
                   disabled={testingDataJud}
-                  className="text-xs text-amber-400 hover:underline disabled:opacity-50"
+                  className="text-xs text-red-500 hover:underline disabled:opacity-50"
                 >
                   {testingDataJud ? "Testando..." : "Testar agora"}
                 </button>

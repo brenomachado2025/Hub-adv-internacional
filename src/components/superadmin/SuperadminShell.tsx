@@ -16,15 +16,15 @@ export function SuperadminShell({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     await fetch("/api/superadmin/logout", { method: "POST" });
-    router.push("/superadmin/login");
+    router.push("/dashboard");
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200">
-      <header className="border-b border-zinc-800 bg-zinc-900/60">
+    <div className="min-h-screen bg-black text-zinc-200">
+      <header className="border-b border-red-950 bg-black">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="w-2 h-2 rounded-full bg-red-600" />
             <h1 className="text-sm font-bold text-white tracking-wide">SUPER-ADMIN · Internacional Hub</h1>
           </div>
           <nav className="flex items-center gap-1">
@@ -36,16 +36,22 @@ export function SuperadminShell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm ${
-                    active ? "bg-amber-500 text-zinc-950 font-medium" : "text-zinc-400 hover:text-white hover:bg-white/5"
+                    active ? "bg-red-600 text-white font-medium" : "text-zinc-400 hover:text-white hover:bg-red-950/60"
                   }`}
                 >
                   <Icon size={14} /> {item.label}
                 </Link>
               );
             })}
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-red-950/60"
+            >
+              Voltar ao Hub
+            </Link>
             <button
               onClick={logout}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-white/5"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-white hover:bg-red-950/60"
             >
               <LogOut size={14} /> Sair
             </button>

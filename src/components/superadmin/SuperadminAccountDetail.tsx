@@ -105,7 +105,7 @@ export function SuperadminAccountDetail({ accountId }: { accountId: string }) {
               className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm ${
                 account.suspended
                   ? "border-emerald-900 text-emerald-400 hover:bg-emerald-950"
-                  : "border-amber-900 text-amber-400 hover:bg-amber-950"
+                  : "border-red-900 text-red-500 hover:bg-red-950"
               }`}
             >
               {account.suspended ? <ShieldCheck size={14} /> : <ShieldOff size={14} />}
@@ -122,7 +122,7 @@ export function SuperadminAccountDetail({ accountId }: { accountId: string }) {
         </div>
 
         {account.isTeamMember && account.teamOwner && (
-          <div className="rounded-lg border border-zinc-800 p-4 text-sm">
+          <div className="rounded-lg border border-red-950 p-4 text-sm">
             Membro da equipe de <strong>{account.teamOwner.name || account.teamOwner.email}</strong>
           </div>
         )}
@@ -137,7 +137,7 @@ export function SuperadminAccountDetail({ accountId }: { accountId: string }) {
         </div>
 
         {account.whatsapp && (
-          <div className="rounded-lg border border-zinc-800 p-4 text-sm">
+          <div className="rounded-lg border border-red-950 p-4 text-sm">
             <p className="font-semibold mb-1">WhatsApp</p>
             <p>
               Status: {account.whatsapp.status} {account.whatsapp.phoneNumber && `· ${account.whatsapp.phoneNumber}`}
@@ -146,7 +146,7 @@ export function SuperadminAccountDetail({ accountId }: { accountId: string }) {
         )}
 
         {account.ownedTeamMembers.length > 0 && (
-          <div className="rounded-lg border border-zinc-800 p-4">
+          <div className="rounded-lg border border-red-950 p-4">
             <p className="font-semibold text-sm mb-2">Membros da equipe desta conta</p>
             <ul className="space-y-1 text-sm">
               {account.ownedTeamMembers.map((m) => (
@@ -164,7 +164,7 @@ export function SuperadminAccountDetail({ accountId }: { accountId: string }) {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-zinc-800 p-4">
+    <div className="rounded-lg border border-red-950 p-4">
       <div className="text-2xl font-bold text-white">{value}</div>
       <div className="text-xs text-zinc-400 mt-1">{label}</div>
     </div>

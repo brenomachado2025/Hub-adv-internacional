@@ -34,14 +34,14 @@ export default function SuperadminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-black px-4">
       <form
         onSubmit={submit}
-        className="w-full max-w-sm rounded-lg border border-zinc-800 p-6 space-y-4 bg-zinc-900 text-zinc-200"
+        className="w-full max-w-sm rounded-lg border border-red-950 p-6 space-y-4 bg-zinc-950 text-zinc-200"
       >
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="w-2 h-2 rounded-full bg-red-600" />
             <h1 className="text-lg font-bold tracking-wide text-white">Painel Super-Admin</h1>
           </div>
           <p className="text-xs text-zinc-500">Acesso restrito à administração do Internacional Hub.</p>
@@ -54,7 +54,7 @@ export default function SuperadminLoginPage() {
             autoFocus
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full mt-1 px-3 py-2 rounded-md border border-zinc-800 bg-zinc-950 text-sm text-white"
+            className="w-full mt-1 px-3 py-2 rounded-md border border-red-950 bg-black text-sm text-white"
           />
         </div>
 
@@ -65,7 +65,7 @@ export default function SuperadminLoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full mt-1 px-3 py-2 rounded-md border border-zinc-800 bg-zinc-950 text-sm text-white"
+            className="w-full mt-1 px-3 py-2 rounded-md border border-red-950 bg-black text-sm text-white"
           />
         </div>
 
@@ -74,7 +74,7 @@ export default function SuperadminLoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-4 py-2 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 text-sm font-semibold disabled:opacity-50"
+          className="w-full px-4 py-2 rounded-md bg-red-600 hover:bg-red-500 text-white text-sm font-semibold disabled:opacity-50"
         >
           {loading ? "Entrando..." : "Entrar"}
         </button>

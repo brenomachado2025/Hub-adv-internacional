@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentSuperadmin } from "@/lib/auth/superadmin-session";
+import { getSuperadminAccess } from "@/lib/auth/superadmin-session";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const superadmin = await getCurrentSuperadmin();
+  const superadmin = await getSuperadminAccess();
   if (!superadmin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { id } = await params;
@@ -52,7 +52,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const superadmin = await getCurrentSuperadmin();
+  const superadmin = await getSuperadminAccess();
   if (!superadmin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { id } = await params;
@@ -74,6 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       action: suspended ? "SUSPEND" : "UNSUSPEND",
       targetEmail: user.email,
       targetUserId: user.id,
+      details: `por ${superadmin.identity}`,
     },
   });
 
@@ -81,7 +82,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const superadmin = await getCurrentSuperadmin();
+  const superadmin = await getSuperadminAccess();
   if (!superadmin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const { id } = await params;
@@ -95,6 +96,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       action: "DELETE_ACCOUNT",
       targetEmail: user.email,
       targetUserId: user.id,
+      details: `por ${superadmin.identity}`,
     },
   });
 
