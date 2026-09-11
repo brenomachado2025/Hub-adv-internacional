@@ -91,10 +91,12 @@ model TeamChatMessage {
   teamOwnerId String   // identifica o workspace (mesmo id usado por getWorkspaceOwnerId)
   authorId    String
   authorName  String   @default("")
+  recipientId String?  // null = mensagem da equipe (grupo); preenchido = conversa particular 1:1
   text        String
   createdAt   DateTime @default(now())
 
   @@index([teamOwnerId, createdAt])
+  @@index([teamOwnerId, recipientId, authorId])
 }
 
 // ---------- Sanções ----------
