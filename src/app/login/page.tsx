@@ -4,9 +4,9 @@ import { GlobeLazy } from "@/components/GlobeLazy";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#02040a] px-4 overflow-hidden relative">
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <GlobeLazy size={760} />
+    <div className="min-h-screen flex items-center justify-center bg-[#02040a] px-4 relative">
+      <div className="fixed inset-0 pointer-events-none">
+        <GlobeLazy />
       </div>
       <div className="relative z-10">
         <Suspense fallback={null}>
