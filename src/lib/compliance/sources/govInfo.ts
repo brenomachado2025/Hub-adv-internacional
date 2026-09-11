@@ -26,11 +26,16 @@ export async function fetchGovInfoList(): Promise<NormalizedComplianceEvent[]> {
   const data = await res.json();
   const results: Record<string, unknown>[] = data?.results ?? [];
 
-  return results.map((r): NormalizedComplianceEvent => {
-    const packageId = String(r.packageId ?? r.granuleId ?? crypto.randomUUID());
+  // Um "package" pode conter vários "granules" (documentos individuais) - usar o
+  // granuleId (mais específico) como id externo evita colisões; e deduplicar aqui
+  // é necessário porque createMany() não tolera IDs repetidos num mesmo lote.
+  const seen = new Map<string, NormalizedComplianceEvent>();
+  for (const r of results) {
+    const externalId = String(r.granuleId ?? r.packageId ?? crypto.randomUUID());
+    if (seen.has(externalId)) continue;
     const download = (r.download as Record<string, unknown>) ?? {};
-    return {
-      externalId: packageId,
+    seen.set(externalId, {
+      externalId,
       eventType: "REGULATION",
       source: "GOVINFO",
       issuingBody: String(r.governmentAuthor1 ?? r.publisher ?? "GovInfo"),
@@ -38,7 +43,9 @@ export async function fetchGovInfoList(): Promise<NormalizedComplianceEvent[]> {
       summary: "",
       severity: "LOW",
       publishedDate: String(r.dateIssued ?? new Date().toISOString()),
-      sourceUrl: String(download.pdfLink ?? r.resultLink ?? `https://www.govinfo.gov/app/details/${packageId}`),
-    };
-  });
+      sourceUrl: String(download.pdfLink ?? r.resultLink ?? `https://www.govinfo.gov/app/details/${externalId}`),
+    });
+  }
+
+  return Array.from(seen.values());
 }
