@@ -9,7 +9,7 @@ import {
   Landmark,
   Receipt,
   Globe,
-  Bell,
+  Scale,
   ClipboardList,
   ChevronDown,
   ArrowRight,
@@ -51,7 +51,7 @@ const QUICK_LINKS = [
   { href: "/honorarios", label: "Honorários", icon: Landmark, color: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950" },
   { href: "/faturas", label: "Faturas", icon: Receipt, color: "text-rose-600 bg-rose-50 dark:bg-rose-950" },
   { href: "/reunioes", label: "Reuniões", icon: Globe, color: "text-cyan-600 bg-cyan-50 dark:bg-cyan-950" },
-  { href: "/notificacoes", label: "Notificações", icon: Bell, color: "text-purple-600 bg-purple-50 dark:bg-purple-950" },
+  { href: "/processos", label: "Processos", icon: Scale, color: "text-purple-600 bg-purple-50 dark:bg-purple-950" },
   { href: "/auditoria", label: "Auditoria", icon: ClipboardList, color: "text-neutral-600 bg-neutral-100 dark:bg-neutral-800" },
 ] as const;
 
@@ -78,52 +78,20 @@ export function DashboardHome({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-gradient-to-br from-[#0e1b30] via-[#132540] to-blue-900 text-white p-6 md:p-8">
+      <div className="rounded-2xl bg-gradient-to-br from-[#0e1b30] via-[#132540] to-blue-900 text-white p-4 md:p-5">
         <p className="text-blue-200 text-sm">{timeOfDayGreeting()}, {greetingName}</p>
-        <h2 className="text-2xl md:text-3xl font-bold mt-1">Bem-vindo ao Internacional Hub</h2>
-        <p className="text-blue-200/80 text-sm mt-2 max-w-xl">
-          Seu escritório em um só lugar: sanções, clientes, WhatsApp e faturamento internacional.
-        </p>
-        <div className="flex flex-wrap gap-3 mt-5">
-          <Link
-            href="/faturas/nova"
-            className="px-4 py-2 rounded-lg bg-white text-[#0e1b30] text-sm font-medium hover:bg-blue-50 transition-colors"
-          >
-            Nova fatura
-          </Link>
-          <Link
-            href="/sancoes"
-            className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-sm font-medium hover:bg-white/20 transition-colors"
-          >
-            Sincronizar sanções
-          </Link>
-          <Link
-            href="/crm"
-            className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-sm font-medium hover:bg-white/20 transition-colors"
-          >
-            Abrir CRM
-          </Link>
-        </div>
+        <h2 className="text-xl md:text-2xl font-bold mt-1">Bem-vindo ao Internacional Hub</h2>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {QUICK_LINKS.map((item) => {
           const Icon = item.icon;
-          const badge =
-            item.href === "/notificacoes" && stats.unreadNotifications > 0
-              ? stats.unreadNotifications
-              : null;
           return (
             <Link
               key={item.href}
               href={item.href}
               className="group relative rounded-xl border border-neutral-200 dark:border-neutral-800 p-4 flex flex-col items-center text-center gap-2 hover:-translate-y-0.5 hover:shadow-md transition-all bg-white dark:bg-neutral-900"
             >
-              {badge && (
-                <span className="absolute top-2 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">
-                  {badge}
-                </span>
-              )}
               {item.href === "/whatsapp" && (
                 <span className={`absolute top-3 right-3 w-2 h-2 rounded-full ${whatsapp.color}`} />
               )}
