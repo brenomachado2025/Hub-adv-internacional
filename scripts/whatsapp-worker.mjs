@@ -9,6 +9,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import QRCode from "qrcode";
+import webpush from "web-push";
 import {
   makeWASocket,
   initAuthCreds,
@@ -20,6 +21,35 @@ import {
 } from "baileys";
 
 const prisma = new PrismaClient();
+
+if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT,
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
+
+// Mesma lógica de src/lib/push.ts, duplicada aqui porque este script roda fora do
+// bundle do Next (node puro, sem alias @/) e não importa código de src/.
+async function sendPush(userId, payload) {
+  if (!process.env.VAPID_PRIVATE_KEY) return;
+  const subs = await prisma.pushSubscription.findMany({ where: { userId } });
+  await Promise.all(
+    subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          JSON.stringify(payload)
+        );
+      } catch (err) {
+        if (err?.statusCode === 404 || err?.statusCode === 410) {
+          await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+        }
+      }
+    })
+  );
+}
 
 // Falhas transitórias (ex.: instabilidade momentânea de rede/DB) não podem derrubar
 // a conexão do WhatsApp inteira - loga e continua rodando em vez de crashar.
@@ -460,6 +490,12 @@ async function main() {
             source: "CLIENT",
             status: "RECEIVED",
           },
+        });
+
+        await sendPush(userId, {
+          title: `WhatsApp: ${client.fullName || phone}`,
+          body: text.slice(0, 120),
+          url: "/whatsapp",
         });
 
         const reply = await handleIncomingMessage(userId, phone, text, msg.pushName, funnel);

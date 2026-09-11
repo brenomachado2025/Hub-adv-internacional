@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { sendPushToUser } from "@/lib/push";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -54,6 +55,12 @@ export async function checkLegalDeadlines(): Promise<void> {
         description: `Alerta de prazo: "${deadline.title}" vence em ${daysRemaining} dia(s)`,
         actor: "sistema",
       },
+    });
+
+    await sendPushToUser(deadline.case.userId, {
+      title: `Prazo vence em ${daysRemaining} dia(s)`,
+      body: `${deadline.title} — ${deadline.case.client.fullName}`,
+      url: `/crm/${deadline.case.clientId}`,
     });
 
     await prisma.legalCaseDeadline.update({

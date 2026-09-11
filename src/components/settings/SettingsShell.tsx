@@ -5,8 +5,9 @@ import { User, Users, ChevronDown } from "lucide-react";
 import { ProfilePanel } from "./ProfilePanel";
 import { UsersPanel } from "./UsersPanel";
 import { TeamPanel } from "./TeamPanel";
+import { NotificationsPanel } from "./NotificationsPanel";
 
-type Item = "perfil" | "usuarios" | "equipes";
+type Item = "perfil" | "notificacoes" | "usuarios" | "equipes";
 
 export function SettingsShell() {
   const [active, setActive] = useState<Item>("perfil");
@@ -18,7 +19,10 @@ export function SettingsShell() {
       <nav className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-2 space-y-1">
         <GroupHeader icon={User} label="Pessoal" open={pessoalOpen} onToggle={() => setPessoalOpen((v) => !v)} />
         {pessoalOpen && (
-          <NavItem label="Perfil" active={active === "perfil"} onClick={() => setActive("perfil")} />
+          <>
+            <NavItem label="Perfil" active={active === "perfil"} onClick={() => setActive("perfil")} />
+            <NavItem label="Notificações" active={active === "notificacoes"} onClick={() => setActive("notificacoes")} />
+          </>
         )}
 
         <GroupHeader icon={Users} label="Usuários" open={usuariosOpen} onToggle={() => setUsuariosOpen((v) => !v)} />
@@ -32,6 +36,7 @@ export function SettingsShell() {
 
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-6">
         {active === "perfil" && <ProfilePanel />}
+        {active === "notificacoes" && <NotificationsPanel />}
         {active === "usuarios" && <UsersPanel />}
         {active === "equipes" && <TeamPanel />}
       </div>
