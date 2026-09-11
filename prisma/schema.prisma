@@ -45,6 +45,7 @@ model User {
   timeEntries          TimeEntry[]
   autoTaskRule         AutoTaskRule?
   pushSubscriptions    PushSubscription[]
+  emailCampaigns       EmailCampaign[]
 }
 
 // ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------
@@ -357,6 +358,36 @@ model CrmClient {
   @@index([userId, status])
   @@index([userId, phone])
   @@index([assigneeId])
+}
+
+model EmailCampaign {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject         String
+  body            String
+  totalRecipients Int      @default(0)
+  sentCount       Int      @default(0)
+  failedCount     Int      @default(0)
+  status          String   @default("SENDING") // SENDING | SENT | ERROR
+  message         String   @default("") // erro geral, se houver (ex.: chave não configurada)
+  createdAt       DateTime @default(now())
+
+  recipients EmailCampaignRecipient[]
+
+  @@index([userId, createdAt])
+}
+
+model EmailCampaignRecipient {
+  id         String        @id @default(cuid())
+  campaignId String
+  campaign   EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  clientId   String?
+  email      String
+  status     String        @default("PENDING") // PENDING | SENT | FAILED
+  error      String        @default("")
+
+  @@index([campaignId])
 }
 
 model CrmAssignmentHistory {

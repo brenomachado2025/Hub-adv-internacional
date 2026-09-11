@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getWorkspaceOwnerId } from "@/lib/team";
+import { buildClientWhere } from "@/lib/crm/filters";
 import { onlyDigits } from "@/lib/data/crm";
 
 export async function GET(req: NextRequest) {
@@ -9,27 +10,15 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
-  const status = req.nextUrl.searchParams.get("status") ?? undefined;
-  const legalArea = req.nextUrl.searchParams.get("legalArea") ?? undefined;
-  const city = req.nextUrl.searchParams.get("city") ?? undefined;
-  const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const where = buildClientWhere(workspaceUserId, {
+    status: req.nextUrl.searchParams.get("status"),
+    legalArea: req.nextUrl.searchParams.get("legalArea"),
+    city: req.nextUrl.searchParams.get("city"),
+    q: req.nextUrl.searchParams.get("q"),
+  });
 
   const clients = await prisma.crmClient.findMany({
-    where: {
-      userId: workspaceUserId,
-      ...(status ? { status } : {}),
-      ...(legalArea ? { legalArea } : {}),
-      ...(city ? { city: { equals: city, mode: "insensitive" } } : {}),
-      ...(q
-        ? {
-            OR: [
-              { fullName: { contains: q, mode: "insensitive" } },
-              { documentNumber: { contains: onlyDigits(q) || q } },
-              { companyName: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
+    where,
     include: { assignee: { select: { id: true, name: true, email: true } } },
     orderBy: { createdAt: "desc" },
   });

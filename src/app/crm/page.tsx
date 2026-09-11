@@ -6,6 +6,7 @@ import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { ClientTable } from "@/components/crm/ClientTable";
 import { ClientFormModal } from "@/components/crm/ClientFormModal";
 import { ImportModal } from "@/components/crm/ImportModal";
+import { EmailBlastModal } from "@/components/crm/EmailBlastModal";
 import { FollowUpSettings } from "@/components/crm/FollowUpSettings";
 import { useToast } from "@/components/Toast";
 import { SkeletonCards } from "@/components/Skeleton";
@@ -25,6 +26,7 @@ export default function CrmPage() {
 
   const [formClient, setFormClient] = useState<CrmClient | null | undefined>(undefined);
   const [showImport, setShowImport] = useState(false);
+  const [showEmailBlast, setShowEmailBlast] = useState(false);
 
   const buildQuery = useCallback(() => {
     const params = new URLSearchParams();
@@ -108,6 +110,12 @@ export default function CrmPage() {
             className="px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm"
           >
             Importar planilha
+          </button>
+          <button
+            onClick={() => setShowEmailBlast(true)}
+            className="px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm"
+          >
+            E-mail em massa
           </button>
           <button
             onClick={() => setFormClient(null)}
@@ -215,6 +223,14 @@ export default function CrmPage() {
           onImported={() => {
             load();
           }}
+        />
+      )}
+
+      {showEmailBlast && (
+        <EmailBlastModal
+          filters={{ status: statusFilter, legalArea: legalAreaFilter, city: cityFilter, q: search }}
+          audienceCount={clients.filter((c) => c.email).length}
+          onClose={() => setShowEmailBlast(false)}
         />
       )}
     </div>
