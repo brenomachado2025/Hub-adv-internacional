@@ -23,6 +23,8 @@ model User {
   role         String   @default("CLIENT") // ADMIN | CLIENT
   suspended    Boolean  @default(false) // bloqueado pelo painel super-admin, impede login
   suspendedAt  DateTime?
+  theme        String   @default("system") // "light" | "dark" | "system" - preferência salva na conta, não só no navegador
+  avatarUrl    String   @default("") // foto de perfil como data-URL (base64), sem depender de storage externo
   createdAt    DateTime @default(now())
 
   invoices        Invoice[]

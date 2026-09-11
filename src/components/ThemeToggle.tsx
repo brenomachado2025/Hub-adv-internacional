@@ -10,6 +10,27 @@ export function ThemeToggle() {
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains("dark"));
     setMounted(true);
+
+    // A preferência salva na conta é a fonte de verdade - localStorage sozinho
+    // some em alguns navegadores embutidos (ex.: WebView do WhatsApp), o que
+    // fazia o modo escuro "resetar" ao reabrir o app. Corrige assim que a
+    // conta responder, se for diferente do que já está aplicado.
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        const accountTheme = data.user?.theme as string | undefined;
+        if (accountTheme === "dark" || accountTheme === "light") {
+          const shouldBeDark = accountTheme === "dark";
+          document.documentElement.classList.toggle("dark", shouldBeDark);
+          setIsDark(shouldBeDark);
+          try {
+            localStorage.setItem("theme", accountTheme);
+          } catch {
+            // localStorage indisponível - tudo bem, a conta já é a fonte de verdade.
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const toggle = () => {
@@ -19,8 +40,13 @@ export function ThemeToggle() {
     try {
       localStorage.setItem("theme", next ? "dark" : "light");
     } catch {
-      // localStorage indisponível (modo privado etc.) - a preferência só não persiste.
+      // localStorage indisponível (modo privado etc.) - a preferência só não persiste localmente.
     }
+    fetch("/api/auth/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: next ? "dark" : "light" }),
+    }).catch(() => {});
   };
 
   // Evita divergência entre o que o servidor renderiza e o tema já aplicado pelo script inline.
