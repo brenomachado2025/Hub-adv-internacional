@@ -29,6 +29,15 @@ const TRIBUNAL_GROUPS = Array.from(new Set(TRIBUNAL_OPTIONS.map((t) => t.group))
 
 const STATUS_LABEL: Record<string, string> = { ACTIVE: "Ativo", CLOSED: "Encerrado", ARCHIVED: "Arquivado" };
 
+type EscavadorProcesso = {
+  numeroCnj: string;
+  tribunalNome: string;
+  tribunalSigla: string;
+  tribunalAlias: string;
+  ultimaMovimentacaoData: string;
+  partes: string[];
+};
+
 export function CasesTab({ clientId }: { clientId: string }) {
   const [cases, setCases] = useState<CaseItem[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -38,6 +47,10 @@ export function CasesTab({ clientId }: { clientId: string }) {
   const [court, setCourt] = useState("");
   const [tribunalAlias, setTribunalAlias] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const [searchingEscavador, setSearchingEscavador] = useState(false);
+  const [escavadorError, setEscavadorError] = useState<string | null>(null);
+  const [escavadorResults, setEscavadorResults] = useState<EscavadorProcesso[] | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/crm/clients/${clientId}/cases`);
@@ -49,13 +62,14 @@ export function CasesTab({ clientId }: { clientId: string }) {
     load();
   }, [load]);
 
-  const createCase = async () => {
-    if (!title.trim()) return;
+  const createCase = async (overrides?: { title: string; caseNumber: string; tribunalAlias: string }) => {
+    const payload = overrides ?? { title, caseNumber, tribunalAlias };
+    if (!payload.title.trim()) return;
     setSaving(true);
     await fetch(`/api/crm/clients/${clientId}/cases`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, caseNumber, court, tribunalAlias }),
+      body: JSON.stringify({ title: payload.title, caseNumber: payload.caseNumber, court, tribunalAlias: payload.tribunalAlias }),
     });
     setTitle("");
     setCaseNumber("");
@@ -64,6 +78,34 @@ export function CasesTab({ clientId }: { clientId: string }) {
     setSaving(false);
     setShowNew(false);
     load();
+  };
+
+  const buscarNoEscavador = async () => {
+    setSearchingEscavador(true);
+    setEscavadorError(null);
+    setEscavadorResults(null);
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases/buscar-escavador`);
+      const data = await res.json();
+      if (!res.ok) {
+        setEscavadorError(data.error ?? "Falha ao buscar processos.");
+        return;
+      }
+      setEscavadorResults(data.processos ?? []);
+    } catch {
+      setEscavadorError("Falha ao conectar ao Escavador.");
+    } finally {
+      setSearchingEscavador(false);
+    }
+  };
+
+  const vincularResultado = async (p: EscavadorProcesso) => {
+    await createCase({
+      title: `Processo ${p.numeroCnj || p.tribunalSigla}`,
+      caseNumber: p.numeroCnj,
+      tribunalAlias: p.tribunalAlias,
+    });
+    setEscavadorResults((prev) => (prev ? prev.filter((r) => r.numeroCnj !== p.numeroCnj) : prev));
   };
 
   const changeStatus = async (caseId: string, status: string) => {
@@ -122,7 +164,7 @@ export function CasesTab({ clientId }: { clientId: string }) {
               ))}
             </select>
             <button
-              onClick={createCase}
+              onClick={() => createCase()}
               disabled={saving || !title.trim()}
               className="sm:col-span-3 px-4 py-1.5 rounded-md bg-slate-800 hover:bg-slate-900 text-white text-sm disabled:opacity-50 w-fit"
             >
@@ -130,6 +172,58 @@ export function CasesTab({ clientId }: { clientId: string }) {
             </button>
           </div>
         )}
+
+        <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Buscar processos automaticamente (Escavador)</p>
+              <p className="text-xs text-neutral-500">
+                Busca pelo CPF/CNPJ já cadastrado deste cliente — o DataJud público não permite esse tipo de busca.
+              </p>
+            </div>
+            <button
+              onClick={buscarNoEscavador}
+              disabled={searchingEscavador}
+              className="text-xs text-blue-600 hover:underline disabled:opacity-50 whitespace-nowrap"
+            >
+              {searchingEscavador ? "Buscando..." : "Buscar por CPF/CNPJ"}
+            </button>
+          </div>
+
+          {escavadorError && <p className="text-xs text-red-600 mt-2">{escavadorError}</p>}
+
+          {escavadorResults && escavadorResults.length === 0 && !escavadorError && (
+            <p className="text-xs text-neutral-500 mt-2">Nenhum processo novo encontrado para este CPF/CNPJ.</p>
+          )}
+
+          {escavadorResults && escavadorResults.length > 0 && (
+            <ul className="space-y-1.5 mt-2">
+              {escavadorResults.map((p) => (
+                <li
+                  key={p.numeroCnj}
+                  className="flex items-center justify-between text-sm bg-white dark:bg-neutral-900 rounded-md border border-neutral-200 dark:border-neutral-800 px-3 py-2"
+                >
+                  <div>
+                    <p className="font-medium">{p.numeroCnj}</p>
+                    <p className="text-xs text-neutral-500">
+                      {p.tribunalNome}
+                      {p.partes.length > 0 && ` · ${p.partes.slice(0, 2).join(", ")}`}
+                      {p.ultimaMovimentacaoData && ` · último andamento: ${p.ultimaMovimentacaoData}`}
+                      {!p.tribunalAlias && " · tribunal não reconhecido automaticamente"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => vincularResultado(p)}
+                    disabled={saving}
+                    className="text-xs text-blue-600 hover:underline shrink-0 disabled:opacity-50"
+                  >
+                    Vincular
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       {cases.length === 0 && <p className="text-sm text-neutral-500">Nenhum processo vinculado ainda.</p>}
