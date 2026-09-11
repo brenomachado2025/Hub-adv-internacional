@@ -69,7 +69,7 @@ export default function NotificacoesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Notificações</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Notificações</h2>
           <p className="text-neutral-500 text-sm mt-1">
             Central de novidades do hub — mudanças de sanções, faturas emitidas e mais.
           </p>

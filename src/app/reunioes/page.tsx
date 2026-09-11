@@ -100,7 +100,7 @@ export default function ReunioesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold">Assistente de Reunião Multi-Fuso</h2>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Assistente de Reunião Multi-Fuso</h2>
         <p className="text-neutral-500 text-sm mt-1">
           Sugestão de horário considerando o expediente comercial de todos os participantes, e detecção de zonas de
           conflito de feriados no calendário.

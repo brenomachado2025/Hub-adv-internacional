@@ -7,12 +7,15 @@ import { ClientTable } from "@/components/crm/ClientTable";
 import { ClientFormModal } from "@/components/crm/ClientFormModal";
 import { ImportModal } from "@/components/crm/ImportModal";
 import { FollowUpSettings } from "@/components/crm/FollowUpSettings";
+import { useToast } from "@/components/Toast";
 import type { CrmClient } from "@/components/crm/types";
 
 export default function CrmPage() {
+  const showToast = useToast();
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [clients, setClients] = useState<CrmClient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState("");
   const [legalAreaFilter, setLegalAreaFilter] = useState("");
@@ -33,10 +36,17 @@ export default function CrmPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/crm/clients?${buildQuery()}`);
-    const data = await res.json();
-    setClients(data.clients ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/crm/clients?${buildQuery()}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setClients(data.clients ?? []);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [buildQuery]);
 
   useEffect(() => {
@@ -46,18 +56,32 @@ export default function CrmPage() {
   const uniqueCities = Array.from(new Set(clients.map((c) => c.city).filter(Boolean))).sort();
 
   const handleStatusChange = async (id: string, status: string) => {
+    const previous = clients.find((c) => c.id === id)?.status;
     setClients((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
-    await fetch(`/api/crm/clients/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
+    try {
+      const res = await fetch(`/api/crm/clients/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setClients((prev) => prev.map((c) => (c.id === id && previous ? { ...c, status: previous } : c)));
+      showToast("Não foi possível mover o cliente. Tente novamente.", "error");
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Excluir este cliente? Essa ação não pode ser desfeita.")) return;
+    const previous = clients;
     setClients((prev) => prev.filter((c) => c.id !== id));
-    await fetch(`/api/crm/clients/${id}`, { method: "DELETE" });
+    try {
+      const res = await fetch(`/api/crm/clients/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+    } catch {
+      setClients(previous);
+      showToast("Não foi possível excluir o cliente. Tente novamente.", "error");
+    }
   };
 
   const exportUrl = `/api/crm/clients/export?${buildQuery()}`;
@@ -160,6 +184,8 @@ export default function CrmPage() {
 
       {loading ? (
         <p className="text-sm text-neutral-500">Carregando...</p>
+      ) : loadError ? (
+        <p className="text-sm text-red-600">Não foi possível carregar os clientes. Tente recarregar a página.</p>
       ) : view === "kanban" ? (
         <KanbanBoard
           clients={clients}

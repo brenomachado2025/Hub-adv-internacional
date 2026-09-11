@@ -84,7 +84,7 @@ export default function HonorariosPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold">Calculadora de Honorários Multi-Moeda</h2>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Calculadora de Honorários Multi-Moeda</h2>
         <p className="text-neutral-500 text-sm mt-1">
           Cotação automática de câmbio e histórico para faturamento internacional, com foco na América do Norte.
         </p>

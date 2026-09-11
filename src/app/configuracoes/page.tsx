@@ -11,7 +11,7 @@ export default async function ConfiguracoesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Configurações</h2>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Configurações</h2>
         <p className="text-neutral-500 text-sm mt-1">Perfil, usuários e equipe do Hub.</p>
       </div>
       <SettingsShell />

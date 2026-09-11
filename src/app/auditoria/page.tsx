@@ -58,7 +58,7 @@ export default function AuditoriaPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Histórico de Consultas (Auditoria)</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Histórico de Consultas (Auditoria)</h2>
           <p className="text-neutral-500 text-sm mt-1">
             Registro de todas as buscas e ações realizadas no hub, para fins de auditoria.
           </p>

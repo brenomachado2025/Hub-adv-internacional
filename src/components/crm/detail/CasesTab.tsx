@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { TRIBUNAL_OPTIONS } from "@/lib/legal/datajud";
+import { useToast } from "@/components/Toast";
+import { formatCurrency, formatDateBR } from "@/lib/format";
 
 type Deadline = { id: string; title: string; dueDate: string; status: string; alertDays: string };
 type TimeEntry = {
@@ -39,6 +41,7 @@ type EscavadorProcesso = {
 };
 
 export function CasesTab({ clientId }: { clientId: string }) {
+  const showToast = useToast();
   const [cases, setCases] = useState<CaseItem[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
@@ -53,10 +56,15 @@ export function CasesTab({ clientId }: { clientId: string }) {
   const [escavadorResults, setEscavadorResults] = useState<EscavadorProcesso[] | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/crm/clients/${clientId}/cases`);
-    const data = await res.json();
-    setCases(data.cases ?? []);
-  }, [clientId]);
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setCases(data.cases ?? []);
+    } catch {
+      showToast("Não foi possível carregar os processos. Tente recarregar a página.", "error");
+    }
+  }, [clientId, showToast]);
 
   useEffect(() => {
     load();
@@ -66,18 +74,24 @@ export function CasesTab({ clientId }: { clientId: string }) {
     const payload = overrides ?? { title, caseNumber, tribunalAlias };
     if (!payload.title.trim()) return;
     setSaving(true);
-    await fetch(`/api/crm/clients/${clientId}/cases`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: payload.title, caseNumber: payload.caseNumber, court, tribunalAlias: payload.tribunalAlias }),
-    });
-    setTitle("");
-    setCaseNumber("");
-    setCourt("");
-    setTribunalAlias("");
-    setSaving(false);
-    setShowNew(false);
-    load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: payload.title, caseNumber: payload.caseNumber, court, tribunalAlias: payload.tribunalAlias }),
+      });
+      if (!res.ok) throw new Error();
+      setTitle("");
+      setCaseNumber("");
+      setCourt("");
+      setTribunalAlias("");
+      setShowNew(false);
+      await load();
+    } catch {
+      showToast("Não foi possível vincular o processo. Tente novamente.", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const buscarNoEscavador = async () => {
@@ -110,12 +124,17 @@ export function CasesTab({ clientId }: { clientId: string }) {
 
   const changeStatus = async (caseId: string, status: string) => {
     if (status !== "ACTIVE" && !confirm(`${status === "CLOSED" ? "Encerrar" : "Arquivar"} este processo?`)) return;
-    await fetch(`/api/crm/clients/${clientId}/cases/${caseId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases/${caseId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error();
+      await load();
+    } catch {
+      showToast("Não foi possível atualizar o processo. Tente novamente.", "error");
+    }
   };
 
   return (
@@ -265,6 +284,7 @@ function CaseDetail({
   onChangeStatus: (caseId: string, status: string) => void;
   onReload: () => void;
 }) {
+  const showToast = useToast();
   const [movements, setMovements] = useState<{ id: string; type: string; description: string; occurredAt: string; source: string }[]>([]);
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -281,15 +301,20 @@ function CaseDetail({
   const [editTribunalAlias, setEditTribunalAlias] = useState(legalCase.tribunalAlias);
 
   const load = useCallback(async () => {
-    const [mRes, dRes, tRes] = await Promise.all([
-      fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/movements`),
-      fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/deadlines`),
-      fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries`),
-    ]);
-    setMovements((await mRes.json()).movements ?? []);
-    setDeadlines((await dRes.json()).deadlines ?? []);
-    setTimeEntries((await tRes.json()).entries ?? []);
-  }, [clientId, legalCase.id]);
+    try {
+      const [mRes, dRes, tRes] = await Promise.all([
+        fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/movements`),
+        fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/deadlines`),
+        fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries`),
+      ]);
+      if (!mRes.ok || !dRes.ok || !tRes.ok) throw new Error();
+      setMovements((await mRes.json()).movements ?? []);
+      setDeadlines((await dRes.json()).deadlines ?? []);
+      setTimeEntries((await tRes.json()).entries ?? []);
+    } catch {
+      showToast("Não foi possível carregar os detalhes do processo. Tente recarregar a página.", "error");
+    }
+  }, [clientId, legalCase.id, showToast]);
 
   useEffect(() => {
     load();
@@ -297,83 +322,119 @@ function CaseDetail({
 
   const addMovement = async () => {
     if (!movementText.trim()) return;
-    await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/movements`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: movementText }),
-    });
-    setMovementText("");
-    load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/movements`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: movementText }),
+      });
+      if (!res.ok) throw new Error();
+      setMovementText("");
+      await load();
+    } catch {
+      showToast("Não foi possível adicionar o andamento. Tente novamente.", "error");
+    }
   };
 
   const addDeadline = async () => {
     if (!deadlineTitle.trim() || !deadlineDate) return;
-    await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/deadlines`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: deadlineTitle, dueDate: deadlineDate }),
-    });
-    setDeadlineTitle("");
-    setDeadlineDate("");
-    load();
-    onReload();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/deadlines`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: deadlineTitle, dueDate: deadlineDate }),
+      });
+      if (!res.ok) throw new Error();
+      setDeadlineTitle("");
+      setDeadlineDate("");
+      await load();
+      onReload();
+    } catch {
+      showToast("Não foi possível definir o prazo. Tente novamente.", "error");
+    }
   };
 
   const toggleDeadline = async (deadlineId: string, status: string) => {
-    await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/deadlines/${deadlineId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    load();
-    onReload();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/deadlines/${deadlineId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error();
+      await load();
+      onReload();
+    } catch {
+      showToast("Não foi possível atualizar o prazo. Tente novamente.", "error");
+    }
   };
 
   const consultarDataJud = async () => {
     setConsultingDataJud(true);
     setDataJudMessage("");
-    const res = await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/consulta-datajud`, { method: "POST" });
-    const data = await res.json();
-    setDataJudMessage(
-      res.ok
-        ? data.message ?? `${data.imported} novo(s) andamento(s) importado(s).`
-        : data.error ?? "Erro ao consultar."
-    );
-    setConsultingDataJud(false);
-    load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/consulta-datajud`, { method: "POST" });
+      const data = await res.json();
+      setDataJudMessage(
+        res.ok
+          ? data.message ?? `${data.imported} novo(s) andamento(s) importado(s).`
+          : data.error ?? "Erro ao consultar."
+      );
+      await load();
+    } catch {
+      setDataJudMessage("Falha de conexão ao consultar o tribunal.");
+    } finally {
+      setConsultingDataJud(false);
+    }
   };
 
   const addTimeEntry = async () => {
     const hours = parseFloat(entryHours.replace(",", "."));
     if (!hours || hours <= 0) return;
-    await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        description: entryDescription,
-        hours,
-        hourlyRate: entryRate ? parseFloat(entryRate.replace(",", ".")) : undefined,
-      }),
-    });
-    setEntryDescription("");
-    setEntryHours("");
-    setEntryRate("");
-    load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: entryDescription,
+          hours,
+          hourlyRate: entryRate ? parseFloat(entryRate.replace(",", ".")) : undefined,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setEntryDescription("");
+      setEntryHours("");
+      setEntryRate("");
+      await load();
+    } catch {
+      showToast("Não foi possível registrar as horas. Tente novamente.", "error");
+    }
   };
 
   const removeTimeEntry = async (entryId: string) => {
-    await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries/${entryId}`, { method: "DELETE" });
-    load();
+    if (!confirm("Remover este registro de horas?")) return;
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}/time-entries/${entryId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      await load();
+    } catch {
+      showToast("Não foi possível remover o registro. Tente novamente.", "error");
+    }
   };
 
   const saveCaseInfo = async () => {
-    await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caseNumber: editCaseNumber, tribunalAlias: editTribunalAlias }),
-    });
-    setEditingCaseInfo(false);
-    onReload();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/cases/${legalCase.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseNumber: editCaseNumber, tribunalAlias: editTribunalAlias }),
+      });
+      if (!res.ok) throw new Error();
+      setEditingCaseInfo(false);
+      onReload();
+    } catch {
+      showToast("Não foi possível salvar. Tente novamente.", "error");
+    }
   };
 
   const totalHours = timeEntries.reduce((sum, e) => sum + e.hours, 0);
@@ -480,7 +541,7 @@ function CaseDetail({
                   onChange={() => toggleDeadline(d.id, d.status === "DONE" ? "PENDING" : "DONE")}
                 />
                 <span className={d.status === "DONE" ? "line-through text-neutral-400" : d.status === "EXPIRED" ? "text-red-600" : ""}>
-                  {d.title} — {new Date(d.dueDate).toLocaleDateString("pt-BR")}
+                  {d.title} — {formatDateBR(d.dueDate)}
                   {d.status === "EXPIRED" && " (vencido)"}
                 </span>
               </label>

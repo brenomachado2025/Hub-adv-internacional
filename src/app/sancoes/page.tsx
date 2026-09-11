@@ -184,7 +184,7 @@ export default function SancoesPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Sanções Internacionais</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Sanções Internacionais</h2>
           <p className="text-neutral-500 text-sm mt-1">
             Busca de due diligence nas listas consolidadas da ONU, OFAC (EUA) e União Europeia — {totalActive} entradas
             ativas.

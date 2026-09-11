@@ -49,7 +49,7 @@ export default function FaturasPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Faturas</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Faturas</h2>
           <p className="text-neutral-500 text-sm mt-1">Emissão de faturas em formato aceito internacionalmente.</p>
         </div>
         <Link href="/faturas/nova" className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium">

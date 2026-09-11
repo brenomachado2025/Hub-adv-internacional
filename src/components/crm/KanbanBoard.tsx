@@ -66,15 +66,17 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                       <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => onEdit(client)}
-                          className="text-neutral-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs"
+                          aria-label="Editar rápido"
                           title="Editar rápido"
+                          className="text-neutral-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs"
                         >
                           ✎
                         </button>
                         <button
                           onClick={() => onDelete(client.id)}
-                          className="text-neutral-400 hover:text-red-600 text-xs"
+                          aria-label="Excluir cliente"
                           title="Excluir"
+                          className="text-neutral-400 hover:text-red-600 text-xs"
                         >
                           ✕
                         </button>

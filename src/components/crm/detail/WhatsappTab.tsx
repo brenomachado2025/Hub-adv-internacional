@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useToast } from "@/components/Toast";
 
 type Message = { id: string; direction: string; source: string; body: string; status: string; createdAt: string };
 
@@ -17,6 +18,7 @@ function formatTime(iso: string) {
 }
 
 export function WhatsappTab({ clientId }: { clientId: string }) {
+  const showToast = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [phone, setPhone] = useState("");
   const [draft, setDraft] = useState("");
@@ -24,10 +26,15 @@ export function WhatsappTab({ clientId }: { clientId: string }) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/whatsapp/conversations/${clientId}/messages`);
-    const data = await res.json();
-    setMessages(data.messages ?? []);
-    setPhone(data.client?.phone ?? "");
+    try {
+      const res = await fetch(`/api/whatsapp/conversations/${clientId}/messages`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setMessages(data.messages ?? []);
+      setPhone(data.client?.phone ?? "");
+    } catch {
+      // Falha pontual numa consulta de polling a cada 4s se autocorrige sozinha.
+    }
   }, [clientId]);
 
   useEffect(() => {
@@ -45,13 +52,20 @@ export function WhatsappTab({ clientId }: { clientId: string }) {
     setSending(true);
     const text = draft;
     setDraft("");
-    await fetch(`/api/whatsapp/conversations/${clientId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    await load();
-    setSending(false);
+    try {
+      const res = await fetch(`/api/whatsapp/conversations/${clientId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error();
+      await load();
+    } catch {
+      setDraft(text);
+      showToast("Não foi possível enviar a mensagem. Tente novamente.", "error");
+    } finally {
+      setSending(false);
+    }
   };
 
   if (!phone) {
