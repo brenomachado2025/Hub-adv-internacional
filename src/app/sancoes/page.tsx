@@ -32,10 +32,36 @@ type SyncRun = {
   startedAt: string;
 };
 
+type ComplianceEvent = {
+  id: string;
+  eventType: string;
+  source: string;
+  issuingBody: string;
+  title: string;
+  summary: string;
+  severity: string;
+  publishedDate: string;
+  sourceUrl: string;
+};
+
 const SOURCE_LABEL: Record<string, string> = {
   OFAC: "OFAC (EUA)",
   EU: "União Europeia",
   UN: "ONU",
+  CSL: "Lista Consolidada (Comércio/Estado/Tesouro dos EUA)",
+};
+
+const COMPLIANCE_SOURCE_LABEL: Record<string, string> = {
+  FEDERAL_REGISTER: "Federal Register",
+  CONGRESS_GOV: "Congress.gov",
+  GOVINFO: "GovInfo",
+};
+
+const SEVERITY_LABEL: Record<string, { label: string; className: string }> = {
+  CRITICAL: { label: "Crítica", className: "bg-red-100 text-red-700" },
+  HIGH: { label: "Alta", className: "bg-orange-100 text-orange-700" },
+  MEDIUM: { label: "Média", className: "bg-amber-100 text-amber-700" },
+  LOW: { label: "Baixa", className: "bg-neutral-200 text-neutral-700" },
 };
 
 const CHANGE_LABEL: Record<string, { label: string; className: string }> = {
@@ -54,6 +80,12 @@ export default function SancoesPage() {
   const [runs, setRuns] = useState<SyncRun[]>([]);
   const [totalActive, setTotalActive] = useState(0);
 
+  const [complianceEvents, setComplianceEvents] = useState<ComplianceEvent[]>([]);
+  const [complianceRuns, setComplianceRuns] = useState<SyncRun[]>([]);
+  const [complianceTotal, setComplianceTotal] = useState(0);
+  const [complianceSyncing, setComplianceSyncing] = useState(false);
+  const [complianceMessage, setComplianceMessage] = useState<string | null>(null);
+
   const loadStatus = useCallback(async () => {
     const res = await fetch("/api/sanctions/sync");
     const data = await res.json();
@@ -67,10 +99,48 @@ export default function SancoesPage() {
     setChanges(data.changes ?? []);
   }, []);
 
+  const loadComplianceStatus = useCallback(async () => {
+    const res = await fetch("/api/compliance/sync");
+    const data = await res.json();
+    setComplianceRuns(data.runs ?? []);
+    setComplianceTotal(data.totalActive ?? 0);
+  }, []);
+
+  const loadComplianceEvents = useCallback(async () => {
+    const res = await fetch("/api/compliance/events");
+    const data = await res.json();
+    setComplianceEvents(data.events ?? []);
+  }, []);
+
   useEffect(() => {
     loadStatus();
     loadChanges();
-  }, [loadStatus, loadChanges]);
+    loadComplianceStatus();
+    loadComplianceEvents();
+  }, [loadStatus, loadChanges, loadComplianceStatus, loadComplianceEvents]);
+
+  const runComplianceSync = async () => {
+    setComplianceSyncing(true);
+    setComplianceMessage(null);
+    try {
+      const res = await fetch("/api/compliance/sync", { method: "POST" });
+      const data = await res.json();
+      const summary = (data.results ?? [])
+        .map((r: { source: string; status: string; changesCount?: number; message?: string }) => {
+          const label = COMPLIANCE_SOURCE_LABEL[r.source] ?? r.source;
+          if (r.status === "SUCCESS") return `${label}: ${r.changesCount} mudança(s)`;
+          if (r.status === "SKIPPED") return `${label}: chave de API não configurada`;
+          return `${label}: erro (${r.message})`;
+        })
+        .join(" · ");
+      setComplianceMessage(summary);
+      await Promise.all([loadComplianceStatus(), loadComplianceEvents()]);
+    } catch {
+      setComplianceMessage("Falha ao sincronizar. Verifique a conexão de rede.");
+    } finally {
+      setComplianceSyncing(false);
+    }
+  };
 
   const runSearch = async (q: string) => {
     setQuery(q);
@@ -219,6 +289,95 @@ export default function SancoesPage() {
               ))}
             </ul>
           )}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-semibold">Legislação & Regulamentos (EUA)</h3>
+            <p className="text-neutral-500 text-xs mt-1">
+              Federal Register, Congress.gov e GovInfo — mudanças em leis e regulamentos de sanções/controle de
+              exportação dos EUA, acoplado ao mesmo monitor de sanções. {complianceTotal} registro(s) ativo(s).
+            </p>
+          </div>
+          <button
+            onClick={runComplianceSync}
+            disabled={complianceSyncing}
+            className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium disabled:opacity-50 whitespace-nowrap"
+          >
+            {complianceSyncing ? "Sincronizando..." : "Sincronizar agora"}
+          </button>
+        </div>
+
+        {complianceMessage && (
+          <div className="text-sm rounded-md border border-neutral-200 dark:border-neutral-800 p-3 mt-3">
+            {complianceMessage}
+          </div>
+        )}
+
+        <div className="grid md:grid-cols-2 gap-6 mt-4">
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Últimas atualizações</h4>
+            {complianceEvents.length === 0 ? (
+              <p className="text-sm text-neutral-500">Nenhum registro sincronizado ainda.</p>
+            ) : (
+              <ul className="space-y-3 max-h-96 overflow-y-auto">
+                {complianceEvents.map((e) => (
+                  <li key={e.id} className="text-sm border-b border-neutral-100 dark:border-neutral-900 pb-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${SEVERITY_LABEL[e.severity]?.className ?? ""}`}
+                      >
+                        {SEVERITY_LABEL[e.severity]?.label ?? e.severity}
+                      </span>
+                      <span className="text-neutral-400 text-xs">
+                        {COMPLIANCE_SOURCE_LABEL[e.source] ?? e.source} · {e.issuingBody}
+                      </span>
+                    </div>
+                    <a
+                      href={e.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium hover:underline block mt-1"
+                    >
+                      {e.title}
+                    </a>
+                    {e.summary && <p className="text-neutral-500 text-xs mt-1 line-clamp-2">{e.summary}</p>}
+                    <p className="text-neutral-400 text-xs mt-1">
+                      {new Date(e.publishedDate).toLocaleDateString("pt-BR")}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Histórico de sincronizações</h4>
+            {complianceRuns.length === 0 ? (
+              <p className="text-sm text-neutral-500">Nenhuma sincronização executada ainda.</p>
+            ) : (
+              <ul className="space-y-2 max-h-96 overflow-y-auto">
+                {complianceRuns.map((r) => (
+                  <li
+                    key={r.id}
+                    className="text-sm flex justify-between border-b border-neutral-100 dark:border-neutral-900 pb-2"
+                  >
+                    <span>
+                      {COMPLIANCE_SOURCE_LABEL[r.source] ?? r.source} —{" "}
+                      {r.status === "SUCCESS"
+                        ? `${r.entriesCount} registros, ${r.changesCount} mudanças`
+                        : r.status === "SKIPPED"
+                          ? "chave de API não configurada"
+                          : `erro: ${r.message}`}
+                    </span>
+                    <span className="text-neutral-400 text-xs">{new Date(r.startedAt).toLocaleString("pt-BR")}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </div>

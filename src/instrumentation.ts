@@ -8,6 +8,7 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
   const { syncAllSources } = await import("@/lib/sanctions/sync");
+  const { syncAllComplianceSources } = await import("@/lib/compliance/sync");
   const { checkLegalDeadlines } = await import("@/lib/legal/deadlines");
   const { checkOverdueInstallments } = await import("@/lib/finance/billing");
   const { checkStaleClients } = await import("@/lib/crm/followup");
@@ -17,6 +18,14 @@ export async function register() {
       console.error("[internacional-hub] Falha na sincronização periódica de sanções:", err);
     });
   };
+
+  const runComplianceSync = () => {
+    syncAllComplianceSources().catch((err) => {
+      console.error("[internacional-hub] Falha na sincronização periódica de legislação/regulamentos dos EUA:", err);
+    });
+  };
+  setTimeout(runComplianceSync, 35_000);
+  setInterval(runComplianceSync, SYNC_INTERVAL_MS);
 
   const runDeadlineCheck = () => {
     checkLegalDeadlines().catch((err) => {

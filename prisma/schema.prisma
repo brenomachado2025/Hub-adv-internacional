@@ -143,6 +143,54 @@ model SanctionSyncRun {
   finishedAt   DateTime?
 }
 
+// ---------- Legislação e Regulamentos dos EUA (acoplado ao módulo de Sanções) ----------
+
+model ComplianceEvent {
+  id            String   @id @default(cuid())
+  externalId    String   // document_number (Federal Register), bill number (Congress.gov), packageId (GovInfo)
+  eventType     String   // "REGULATION" | "LEGISLATION"
+  source        String   // "FEDERAL_REGISTER" | "CONGRESS_GOV" | "GOVINFO"
+  issuingBody   String   @default("")
+  title         String
+  summary       String   @default("")
+  severity      String   @default("MEDIUM") // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  publishedDate DateTime
+  sourceUrl     String
+  rawHash       String
+  firstSeenAt   DateTime @default(now())
+  lastSeenAt    DateTime @default(now())
+  active        Boolean  @default(true)
+
+  changeEvents  ComplianceChangeEvent[]
+
+  @@unique([source, externalId])
+  @@index([title])
+  @@index([publishedDate])
+}
+
+model ComplianceChangeEvent {
+  id          String   @id @default(cuid())
+  eventId     String?
+  event       ComplianceEvent? @relation(fields: [eventId], references: [id])
+  source      String
+  externalId  String
+  title       String
+  changeType  String   // "ADDED" | "MODIFIED"
+  details     String   @default("")
+  createdAt   DateTime @default(now())
+}
+
+model ComplianceSyncRun {
+  id           String   @id @default(cuid())
+  source       String
+  status       String   // "SUCCESS" | "ERROR" | "SKIPPED" (SKIPPED = chave de API não configurada)
+  message      String   @default("")
+  entriesCount Int      @default(0)
+  changesCount Int      @default(0)
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+}
+
 // ---------- Notificações (central estilo e-mail) ----------
 
 model Notification {

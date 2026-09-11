@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { searchCsl } from "@/lib/sanctions/csl";
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -12,17 +13,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
-  const results = await prisma.sanctionEntry.findMany({
-    where: {
-      active: true,
-      OR: [
-        { name: { contains: q, mode: "insensitive" } },
-        { aliases: { contains: q, mode: "insensitive" } },
-      ],
-    },
-    orderBy: { name: "asc" },
-    take: 100,
-  });
+  const [dbResults, cslResults] = await Promise.all([
+    prisma.sanctionEntry.findMany({
+      where: {
+        active: true,
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { aliases: { contains: q, mode: "insensitive" } },
+        ],
+      },
+      orderBy: { name: "asc" },
+      take: 100,
+    }),
+    searchCsl(q),
+  ]);
+
+  const results = [...dbResults, ...cslResults];
 
   await prisma.auditLog.create({
     data: {
