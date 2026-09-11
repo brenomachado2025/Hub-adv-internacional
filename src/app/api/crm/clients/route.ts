@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { getWorkspaceOwnerId } from "@/lib/team";
 import { buildClientWhere } from "@/lib/crm/filters";
 import { onlyDigits } from "@/lib/data/crm";
+import { runClientCreatedAutomations } from "@/lib/automations/engine";
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -113,6 +114,8 @@ export async function POST(req: NextRequest) {
       },
     });
   }
+
+  await runClientCreatedAutomations(workspaceUserId, client);
 
   return NextResponse.json({ client });
 }

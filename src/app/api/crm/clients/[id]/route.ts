@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getWorkspaceOwnerId, getWorkspaceUserIds } from "@/lib/team";
 import { onlyDigits, crmStatusLabel } from "@/lib/data/crm";
+import { runClientStatusChangedAutomations } from "@/lib/automations/engine";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -132,6 +133,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         },
       });
     }
+  }
+
+  if (newStatus) {
+    await runClientStatusChangedAutomations(workspaceUserId, client, newStatus);
   }
 
   return NextResponse.json({ client });

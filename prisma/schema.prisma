@@ -46,6 +46,7 @@ model User {
   autoTaskRule         AutoTaskRule?
   pushSubscriptions    PushSubscription[]
   emailCampaigns       EmailCampaign[]
+  automationRules      AutomationRule[]
 }
 
 // ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------
@@ -388,6 +389,22 @@ model EmailCampaignRecipient {
   error      String        @default("")
 
   @@index([campaignId])
+}
+
+model AutomationRule {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String   @default("")
+  enabled       Boolean  @default(true)
+  triggerType   String   // CLIENT_CREATED | CLIENT_STATUS_CHANGED
+  triggerStatus String   @default("") // status-alvo quando triggerType = CLIENT_STATUS_CHANGED ("" = qualquer status)
+  actionType    String   // CREATE_TASK | SEND_NOTIFICATION | SEND_WHATSAPP
+  actionText    String   @default("") // título da tarefa, ou texto da notificação/whatsapp
+  actionDays    Int      @default(1) // usado só em CREATE_TASK (prazo em dias)
+  createdAt     DateTime @default(now())
+
+  @@index([userId, triggerType])
 }
 
 model CrmAssignmentHistory {
