@@ -10,7 +10,7 @@ import {
   Receipt,
   Globe,
   Scale,
-  ClipboardList,
+  MessagesSquare,
   ChevronDown,
   ArrowRight,
 } from "lucide-react";
@@ -52,7 +52,7 @@ const QUICK_LINKS = [
   { href: "/faturas", label: "Faturas", icon: Receipt, color: "text-rose-600 bg-rose-50 dark:bg-rose-950" },
   { href: "/reunioes", label: "Reuniões", icon: Globe, color: "text-cyan-600 bg-cyan-50 dark:bg-cyan-950" },
   { href: "/processos", label: "Processos", icon: Scale, color: "text-purple-600 bg-purple-50 dark:bg-purple-950" },
-  { href: "/auditoria", label: "Auditoria", icon: ClipboardList, color: "text-neutral-600 bg-neutral-100 dark:bg-neutral-800" },
+  { href: "/chat-equipe", label: "Chat da Equipe", icon: MessagesSquare, color: "text-neutral-600 bg-neutral-100 dark:bg-neutral-800" },
 ] as const;
 
 function timeOfDayGreeting() {
