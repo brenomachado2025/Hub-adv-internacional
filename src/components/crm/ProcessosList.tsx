@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Scale } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { SkeletonList } from "@/components/Skeleton";
 
 type Deadline = { id: string; title: string; dueDate: string; status: string };
 type CaseItem = {
@@ -35,12 +38,14 @@ export function ProcessosList() {
   }, []);
 
   if (error) return <p className="text-sm text-red-600">{error}</p>;
-  if (!cases) return <p className="text-sm text-neutral-500">Carregando...</p>;
+  if (!cases) return <SkeletonList rows={5} />;
   if (cases.length === 0) {
     return (
-      <p className="text-sm text-neutral-500">
-        Nenhum processo vinculado ainda. Abra o perfil de um cliente no CRM e use a aba "Processos".
-      </p>
+      <EmptyState
+        icon={Scale}
+        title="Nenhum processo vinculado ainda"
+        description={'Abra o perfil de um cliente no CRM e use a aba "Processos" para vincular o primeiro.'}
+      />
     );
   }
 

@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Receipt } from "lucide-react";
 import { formatCurrency, formatDateBR } from "@/lib/format";
+import { EmptyState } from "@/components/EmptyState";
 
 type InvoiceItem = { id: string; description: string; quantity: number; unitPrice: number };
 type Invoice = {
@@ -81,8 +83,12 @@ export default function FaturasPage() {
             )}
             {!loading && !error && invoices.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-4 text-center text-neutral-500">
-                  Nenhuma fatura emitida ainda.
+                <td colSpan={6}>
+                  <EmptyState
+                    icon={Receipt}
+                    title="Nenhuma fatura emitida ainda"
+                    description="Clique em Nova fatura para emitir a primeira."
+                  />
                 </td>
               </tr>
             )}

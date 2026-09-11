@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { FileText } from "lucide-react";
 import { DOCUMENT_PLACEHOLDERS } from "@/lib/data/documents";
 import { useToast } from "@/components/Toast";
+import { EmptyState } from "@/components/EmptyState";
 
 type Template = { id: string; title: string; body: string };
 type GeneratedDoc = { id: string; title: string; createdAt: string; createdBy: string; status: string };
@@ -181,7 +183,9 @@ export function DocumentsTab({ clientId }: { clientId: string }) {
       <div>
         <h4 className="text-sm font-semibold mb-2">Documentos gerados</h4>
         <div className="space-y-2">
-          {documents.length === 0 && <p className="text-sm text-neutral-500">Nenhum documento gerado ainda.</p>}
+          {documents.length === 0 && (
+            <EmptyState icon={FileText} title="Nenhum documento gerado ainda" description="Escolha um modelo acima e gere o primeiro documento deste cliente." />
+          )}
           {documents.map((d) => {
             const s = STATUS_LABEL[d.status] ?? STATUS_LABEL.APPROVED;
             return (

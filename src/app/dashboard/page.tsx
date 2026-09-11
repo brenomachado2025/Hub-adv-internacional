@@ -32,6 +32,47 @@ export default async function DashboardPage() {
 
   if (!account) redirect("/login");
 
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  const sevenDaysOut = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  const deadlineWhere = {
+    status: "PENDING",
+    dueDate: { lte: sevenDaysOut },
+    case: { userId: workspaceUserId },
+  } as const;
+  const taskWhere = {
+    status: "PENDING",
+    dueDate: { lte: endOfToday },
+    client: { userId: workspaceUserId },
+  } as const;
+
+  const [
+    upcomingDeadlines,
+    upcomingDeadlinesCount,
+    tasksDue,
+    tasksDueCount,
+    clientCount,
+    teamMemberCount,
+  ] = await Promise.all([
+    prisma.legalCaseDeadline.findMany({
+      where: deadlineWhere,
+      orderBy: { dueDate: "asc" },
+      take: 5,
+      include: { case: { include: { client: { select: { id: true, fullName: true } } } } },
+    }),
+    prisma.legalCaseDeadline.count({ where: deadlineWhere }),
+    prisma.crmTask.findMany({
+      where: taskWhere,
+      orderBy: { dueDate: "asc" },
+      take: 5,
+      include: { client: { select: { id: true, fullName: true } } },
+    }),
+    prisma.crmTask.count({ where: taskWhere }),
+    prisma.crmClient.count({ where: { userId: workspaceUserId } }),
+    prisma.teamMember.count({ where: { team: { ownerId: workspaceUserId } } }),
+  ]);
+
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const [whatsappSentToday, whatsappReceivedToday] = await Promise.all([
@@ -80,6 +121,30 @@ export default async function DashboardPage() {
         clientName: inv.clientName,
         currency: inv.currency,
       }))}
+      upcomingDeadlines={{
+        count: upcomingDeadlinesCount,
+        items: upcomingDeadlines.map((d) => ({
+          id: d.id,
+          title: d.title,
+          dueDate: d.dueDate.toISOString(),
+          clientId: d.case.client.id,
+          clientName: d.case.client.fullName,
+        })),
+      }}
+      tasksDue={{
+        count: tasksDueCount,
+        items: tasksDue.map((t) => ({
+          id: t.id,
+          title: t.title,
+          clientId: t.client.id,
+          clientName: t.client.fullName,
+        })),
+      }}
+      onboarding={{
+        hasClients: clientCount > 0,
+        whatsappConnected: whatsappSession?.status === "CONNECTED",
+        hasTeamInvited: teamMemberCount > 0,
+      }}
     />
   );
 }

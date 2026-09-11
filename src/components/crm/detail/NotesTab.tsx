@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { StickyNote } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import { EmptyState } from "@/components/EmptyState";
 
 type Note = { id: string; authorName: string; text: string; createdAt: string };
 
@@ -71,7 +73,9 @@ export function NotesTab({ clientId }: { clientId: string }) {
 
       <div className="space-y-3">
         {loadError && <p className="text-sm text-red-600">Não foi possível carregar as anotações.</p>}
-        {!loadError && notes.length === 0 && <p className="text-sm text-neutral-500">Nenhuma anotação ainda.</p>}
+        {!loadError && notes.length === 0 && (
+          <EmptyState icon={StickyNote} title="Nenhuma anotação ainda" description="Registre observações sobre a conversa ou o andamento do caso." />
+        )}
         {notes.map((n) => (
           <div key={n.id} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3">
             <p className="text-sm whitespace-pre-wrap">{n.text}</p>

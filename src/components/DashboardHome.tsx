@@ -13,6 +13,11 @@ import {
   MessagesSquare,
   ChevronDown,
   ArrowRight,
+  AlertTriangle,
+  CheckSquare,
+  Check,
+  Circle,
+  type LucideIcon,
 } from "lucide-react";
 
 type Stats = {
@@ -35,6 +40,10 @@ type LastSync = { source: string; startedAt: string; ok: boolean } | null;
 type NotificationItem = { id: string; subject: string; isRead: boolean; createdAt: string };
 type InvoiceItem = { id: string; number: string; clientName: string; currency: string };
 
+type DeadlineItem = { id: string; title: string; dueDate: string; clientId: string; clientName: string };
+type TaskItem = { id: string; title: string; clientId: string; clientName: string };
+type Onboarding = { hasClients: boolean; whatsappConnected: boolean; hasTeamInvited: boolean };
+
 type Props = {
   greetingName: string;
   stats: Stats;
@@ -42,6 +51,9 @@ type Props = {
   lastSync: LastSync;
   recentNotifications: NotificationItem[];
   recentInvoices: InvoiceItem[];
+  upcomingDeadlines: { count: number; items: DeadlineItem[] };
+  tasksDue: { count: number; items: TaskItem[] };
+  onboarding: Onboarding;
 };
 
 const QUICK_LINKS = [
@@ -72,6 +84,9 @@ export function DashboardHome({
   lastSync,
   recentNotifications,
   recentInvoices,
+  upcomingDeadlines,
+  tasksDue,
+  onboarding,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [tab, setTab] = useState<Tab>("Compliance");
@@ -82,6 +97,54 @@ export function DashboardHome({
         <p className="text-blue-200 text-sm">{timeOfDayGreeting()}, {greetingName}</p>
         <h2 className="text-xl md:text-2xl font-bold mt-1">Bem-vindo ao Internacional Hub</h2>
       </div>
+
+      {!onboarding.hasClients && <OnboardingChecklist onboarding={onboarding} />}
+
+      {(upcomingDeadlines.count > 0 || tasksDue.count > 0) && (
+        <div className="grid md:grid-cols-2 gap-4">
+          {upcomingDeadlines.count > 0 && (
+            <PendingCard
+              icon={AlertTriangle}
+              iconColor="text-amber-600 bg-amber-50 dark:bg-amber-950"
+              title="Prazos próximos"
+              count={upcomingDeadlines.count}
+              href="/processos"
+            >
+              {upcomingDeadlines.items.map((d) => (
+                <Link
+                  key={d.id}
+                  href={`/crm/${d.clientId}`}
+                  className="flex items-center justify-between text-sm hover:underline"
+                >
+                  <span className="truncate">{d.title} — {d.clientName}</span>
+                  <span className="text-neutral-400 text-xs shrink-0 ml-2">
+                    {new Date(d.dueDate).toLocaleDateString("pt-BR")}
+                  </span>
+                </Link>
+              ))}
+            </PendingCard>
+          )}
+          {tasksDue.count > 0 && (
+            <PendingCard
+              icon={CheckSquare}
+              iconColor="text-blue-600 bg-blue-50 dark:bg-blue-950"
+              title="Tarefas pendentes"
+              count={tasksDue.count}
+              href="/crm"
+            >
+              {tasksDue.items.map((t) => (
+                <Link
+                  key={t.id}
+                  href={`/crm/${t.clientId}`}
+                  className="flex items-center justify-between text-sm hover:underline"
+                >
+                  <span className="truncate">{t.title} — {t.clientName}</span>
+                </Link>
+              ))}
+            </PendingCard>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {QUICK_LINKS.map((item) => {
@@ -238,5 +301,70 @@ function StatCard({ label, value, color, href }: { label: string; value: number;
       <div className={`text-3xl font-bold ${color}`}>{value}</div>
       <div className="text-xs text-neutral-500 mt-1">{label}</div>
     </Link>
+  );
+}
+
+function PendingCard({
+  icon: Icon,
+  iconColor,
+  title,
+  count,
+  href,
+  children,
+}: {
+  icon: LucideIcon;
+  iconColor: string;
+  title: string;
+  count: number;
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-4">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${iconColor}`}>
+          <Icon size={16} strokeWidth={1.75} />
+        </div>
+        <h3 className="text-sm font-semibold">
+          {title} <span className="text-neutral-400 font-normal">({count})</span>
+        </h3>
+      </div>
+      <div className="space-y-2">{children}</div>
+      {count > 5 && (
+        <Link href={href} className="text-xs text-blue-600 mt-3 inline-block">
+          Ver todas →
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function OnboardingChecklist({ onboarding }: { onboarding: Onboarding }) {
+  const steps = [
+    { done: onboarding.hasClients, label: "Cadastre seu primeiro cliente", href: "/crm" },
+    { done: onboarding.whatsappConnected, label: "Conecte o WhatsApp", href: "/whatsapp" },
+    { done: onboarding.hasTeamInvited, label: "Convide alguém da equipe", href: "/configuracoes" },
+  ];
+
+  return (
+    <div className="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/30 p-4">
+      <h3 className="text-sm font-semibold mb-3">Primeiros passos</h3>
+      <div className="space-y-2">
+        {steps.map((s) => (
+          <Link
+            key={s.label}
+            href={s.href}
+            className="flex items-center gap-2.5 text-sm hover:underline w-fit"
+          >
+            {s.done ? (
+              <Check size={16} className="text-emerald-600 shrink-0" />
+            ) : (
+              <Circle size={16} className="text-neutral-300 dark:text-neutral-700 shrink-0" />
+            )}
+            <span className={s.done ? "text-neutral-400 line-through" : ""}>{s.label}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }

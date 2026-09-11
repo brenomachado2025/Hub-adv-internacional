@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Scale } from "lucide-react";
 import { TRIBUNAL_OPTIONS } from "@/lib/legal/datajud";
 import { useToast } from "@/components/Toast";
+import { EmptyState } from "@/components/EmptyState";
 import { formatCurrency, formatDateBR } from "@/lib/format";
 
 type Deadline = { id: string; title: string; dueDate: string; status: string; alertDays: string };
@@ -245,7 +246,9 @@ export function CasesTab({ clientId }: { clientId: string }) {
         </div>
       </div>
 
-      {cases.length === 0 && <p className="text-sm text-neutral-500">Nenhum processo vinculado ainda.</p>}
+      {cases.length === 0 && (
+        <EmptyState icon={Scale} title="Nenhum processo vinculado ainda" description="Vincule manualmente pelo número CNJ ou busque automaticamente pelo CPF/CNPJ acima." />
+      )}
 
       {cases.map((c) => (
         <div key={c.id} className="rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">

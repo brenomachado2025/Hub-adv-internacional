@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, ListChecks } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import { EmptyState } from "@/components/EmptyState";
 
 type Task = {
   id: string;
@@ -129,7 +130,9 @@ export function TasksTab({ clientId }: { clientId: string }) {
 
       <div className="space-y-2">
         {loadError && <p className="text-sm text-red-600">Não foi possível carregar as tarefas.</p>}
-        {!loadError && tasks.length === 0 && <p className="text-sm text-neutral-500">Nenhuma tarefa pendente.</p>}
+        {!loadError && tasks.length === 0 && (
+          <EmptyState icon={ListChecks} title="Nenhuma tarefa pendente" description="Crie uma tarefa acima para acompanhar pendências deste cliente." />
+        )}
         {tasks.map((t) => (
           <div
             key={t.id}

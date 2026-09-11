@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { CalendarClock } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 type Meeting = { id: string; title: string; scheduledFor: string; notes: string; createdAt: string };
 
@@ -108,7 +110,9 @@ export function MeetingsTab({ clientId }: { clientId: string }) {
       <div>
         <h4 className="text-sm font-semibold mb-2">Próximas</h4>
         <div className="space-y-2">
-          {upcoming.length === 0 && <p className="text-sm text-neutral-500">Nenhuma reunião agendada.</p>}
+          {upcoming.length === 0 && (
+            <EmptyState icon={CalendarClock} title="Nenhuma reunião agendada" description="Marque uma reunião ou audiência acima." />
+          )}
           {upcoming.map((m) => (
             <MeetingRow key={m.id} meeting={m} />
           ))}

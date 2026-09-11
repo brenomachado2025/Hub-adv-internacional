@@ -8,6 +8,7 @@ import { ClientFormModal } from "@/components/crm/ClientFormModal";
 import { ImportModal } from "@/components/crm/ImportModal";
 import { FollowUpSettings } from "@/components/crm/FollowUpSettings";
 import { useToast } from "@/components/Toast";
+import { SkeletonCards } from "@/components/Skeleton";
 import type { CrmClient } from "@/components/crm/types";
 
 export default function CrmPage() {
@@ -183,7 +184,7 @@ export default function CrmPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-neutral-500">Carregando...</p>
+        <SkeletonCards count={8} />
       ) : loadError ? (
         <p className="text-sm text-red-600">Não foi possível carregar os clientes. Tente recarregar a página.</p>
       ) : view === "kanban" ? (
