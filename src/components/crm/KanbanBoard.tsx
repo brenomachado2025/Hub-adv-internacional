@@ -97,16 +97,18 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                       <button
                         disabled={!prev}
                         onClick={() => prev && onStatusChange(client.id, prev)}
-                        className="text-xs px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 disabled:opacity-30"
+                        aria-label="Voltar etapa"
                         title="Voltar etapa"
+                        className="text-xs px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 disabled:opacity-30"
                       >
                         ←
                       </button>
                       <button
                         disabled={!next}
                         onClick={() => next && onStatusChange(client.id, next)}
-                        className="text-xs px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 disabled:opacity-30"
+                        aria-label="Avançar etapa"
                         title="Avançar etapa"
+                        className="text-xs px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 disabled:opacity-30"
                       >
                         →
                       </button>

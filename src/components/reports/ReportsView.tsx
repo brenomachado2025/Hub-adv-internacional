@@ -117,7 +117,8 @@ export function ReportsView() {
             {report.revenueByArea.length === 0 ? (
               <p className="text-sm text-neutral-500">Nenhuma fatura vinculada a cliente/área no período.</p>
             ) : (
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-neutral-500 border-b border-neutral-200 dark:border-neutral-800">
                     <th className="py-1.5">Área</th>
@@ -134,7 +135,8 @@ export function ReportsView() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             )}
           </div>
         </>

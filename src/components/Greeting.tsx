@@ -14,10 +14,13 @@ export function Greeting() {
         const rawFirstName = (user.name || user.email).trim().split(/\s+/)[0];
         const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
         setLabel(user.title ? `${user.title} ${firstName}` : firstName);
-      });
+      })
+      .catch(() => {});
   }, []);
 
   if (!label) return null;
 
-  return <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{label}</span>;
+  return (
+    <span className="hidden sm:inline text-sm font-medium text-neutral-700 dark:text-neutral-300">{label}</span>
+  );
 }
