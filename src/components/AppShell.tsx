@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Settings, Menu } from "lucide-react";
+import { Settings, Menu, Search } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Greeting } from "@/components/Greeting";
 import { SupportChat } from "@/components/SupportChat";
 import { ToastProvider } from "@/components/Toast";
+import { CommandPalette } from "@/components/CommandPalette";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -36,6 +37,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Menu size={18} strokeWidth={1.75} />
             </button>
             <div className="flex items-center gap-2 sm:gap-4">
+              <button
+                onClick={() => window.dispatchEvent(new Event("hub:open-search"))}
+                aria-label="Buscar"
+                title="Buscar (Ctrl+K)"
+                className="inline-flex items-center gap-2 px-3 h-9 rounded-md border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-sm text-neutral-500"
+              >
+                <Search size={16} strokeWidth={1.75} />
+                <span className="hidden lg:inline text-xs">Ctrl+K</span>
+              </button>
               <Greeting />
               <NotificationBell />
               <Link
@@ -54,6 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 sm:p-6 max-w-6xl w-full mx-auto">{children}</main>
         </div>
         <SupportChat />
+        <CommandPalette />
       </div>
     </ToastProvider>
   );
