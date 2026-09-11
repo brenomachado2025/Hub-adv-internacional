@@ -3,12 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { PasswordInput } from "@/components/PasswordInput";
 
 export function SignupForm() {
-  const router = useRouter();
-
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [email, setEmail] = useState("");
@@ -37,8 +34,7 @@ export function SignupForm() {
         const data = await res.json();
         throw new Error(data.error ?? "Falha ao criar conta");
       }
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
     } finally {

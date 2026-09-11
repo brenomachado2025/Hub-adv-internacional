@@ -58,16 +58,16 @@ const COMPLIANCE_SOURCE_LABEL: Record<string, string> = {
 };
 
 const SEVERITY_LABEL: Record<string, { label: string; className: string }> = {
-  CRITICAL: { label: "Crítica", className: "bg-red-100 text-red-700" },
-  HIGH: { label: "Alta", className: "bg-orange-100 text-orange-700" },
-  MEDIUM: { label: "Média", className: "bg-amber-100 text-amber-700" },
-  LOW: { label: "Baixa", className: "bg-neutral-200 text-neutral-700" },
+  CRITICAL: { label: "Crítica", className: "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300" },
+  HIGH: { label: "Alta", className: "bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300" },
+  MEDIUM: { label: "Média", className: "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300" },
+  LOW: { label: "Baixa", className: "bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300" },
 };
 
 const CHANGE_LABEL: Record<string, { label: string; className: string }> = {
-  ADDED: { label: "Incluído", className: "bg-emerald-100 text-emerald-700" },
-  REMOVED: { label: "Removido", className: "bg-neutral-200 text-neutral-700" },
-  MODIFIED: { label: "Alterado", className: "bg-amber-100 text-amber-700" },
+  ADDED: { label: "Incluído", className: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
+  REMOVED: { label: "Removido", className: "bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300" },
+  MODIFIED: { label: "Alterado", className: "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300" },
 };
 
 export default function SancoesPage() {

@@ -29,6 +29,9 @@ export async function POST() {
 }
 
 export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
   const runs = await prisma.complianceSyncRun.findMany({
     orderBy: { startedAt: "desc" },
     take: 15,

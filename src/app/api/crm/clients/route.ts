@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     data: {
       userId: user.userId,
       actor: user.email,
-      action: "EXPORT",
+      action: "CREATE",
       module: "crm",
       query: client.fullName,
       resultSummary: "Cliente cadastrado no CRM",

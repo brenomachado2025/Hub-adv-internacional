@@ -3,11 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { PasswordInput } from "@/components/PasswordInput";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
 
@@ -30,8 +29,7 @@ export function LoginForm() {
         const data = await res.json();
         throw new Error(data.error ?? "Falha ao entrar");
       }
-      router.push(next);
-      router.refresh();
+      window.location.href = next;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
     } finally {

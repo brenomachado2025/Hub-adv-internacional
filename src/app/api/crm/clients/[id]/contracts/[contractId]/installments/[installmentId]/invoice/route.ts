@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getWorkspaceOwnerId } from "@/lib/team";
-
-async function generateInvoiceNumber(userId: string): Promise<string> {
-  const year = new Date().getFullYear();
-  const count = await prisma.invoice.count({ where: { userId, number: { startsWith: `INV-${year}-` } } });
-  return `INV-${year}-${String(count + 1).padStart(4, "0")}`;
-}
+import { createInvoiceWithNumber } from "@/lib/finance/invoice-number";
 
 export async function POST(
   _req: Request,
@@ -32,11 +28,11 @@ export async function POST(
   }
 
   const owner = await prisma.user.findUnique({ where: { id: workspaceUserId } });
-  const number = await generateInvoiceNumber(workspaceUserId);
   const today = new Date().toISOString().slice(0, 10);
 
-  const invoice = await prisma.invoice.create({
-    data: {
+  const invoice = await createInvoiceWithNumber<Prisma.InvoiceGetPayload<{ include: { items: true } }>>(
+    workspaceUserId,
+    (number) => ({
       userId: workspaceUserId,
       number,
       issuerName: owner?.name || owner?.email || "Escritório",
@@ -57,9 +53,9 @@ export async function POST(
           },
         ],
       },
-    },
-    include: { items: true },
-  });
+    }),
+    { items: true }
+  );
 
   await prisma.crmActivity.create({
     data: {

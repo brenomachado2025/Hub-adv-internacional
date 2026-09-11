@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     data: {
       userId: user.userId,
       actor: user.email,
-      action: "EXPORT",
+      action: "IMPORT",
       module: "crm",
       query: `Importação em lote (${rows.length} linha(s))`,
       resultSummary: `${imported} cliente(s) importado(s), ${skipped} ignorado(s)`,
