@@ -19,6 +19,7 @@ model User {
   name         String   @default("")
   title        String   @default("") // "Sr." | "Sra." | "" (tratamento exibido no topo do app)
   passwordHash String
+  googleId     String?  @unique // preenchido quando a conta foi criada/vinculada via "Continuar com Google"
   role         String   @default("CLIENT") // ADMIN | CLIENT
   suspended    Boolean  @default(false) // bloqueado pelo painel super-admin, impede login
   suspendedAt  DateTime?
@@ -47,6 +48,20 @@ model User {
   pushSubscriptions    PushSubscription[]
   emailCampaigns       EmailCampaign[]
   automationRules      AutomationRule[]
+  passwordResetTokens  PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String    // código numérico de 6 dígitos, enviado por e-mail
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // ---------- Equipe (compartilhamento total de conta entre usuários convidados) ----------

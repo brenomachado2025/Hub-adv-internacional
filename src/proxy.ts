@@ -6,6 +6,8 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/signup",
+  "/esqueci-senha",
+  "/redefinir-senha",
   "/robots.txt",
   "/sitemap.xml",
   "/superadmin/login",
@@ -18,6 +20,9 @@ const PUBLIC_API_PREFIXES = [
   "/api/auth/signup",
   "/api/auth/logout",
   "/api/auth/me",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/google",
   "/api/superadmin/login",
 ];
 

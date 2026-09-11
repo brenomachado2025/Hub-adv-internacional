@@ -63,7 +63,12 @@ export function LoginForm() {
       </div>
 
       <div>
-        <label className="text-xs text-neutral-500">Senha</label>
+        <div className="flex items-center justify-between">
+          <label className="text-xs text-neutral-500">Senha</label>
+          <Link href="/esqueci-senha" className="text-xs text-blue-600">
+            Esqueceu a senha?
+          </Link>
+        </div>
         <PasswordInput
           required
           value={password}
