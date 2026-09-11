@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getWorkspaceOwnerId } from "@/lib/team";
+import { getWorkspaceOwnerId, hasFinanceAccess } from "@/lib/team";
 
 async function loadOwnedInstallment(
   clientId: string,
@@ -24,6 +24,9 @@ export async function PATCH(
 ) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!(await hasFinanceAccess(user.userId))) {
+    return NextResponse.json({ error: "Sem acesso a dados financeiros" }, { status: 403 });
+  }
   const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const { id, contractId, installmentId } = await params;

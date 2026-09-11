@@ -15,6 +15,16 @@ export async function getWorkspaceOwnerId(userId: string): Promise<string> {
   return membership?.team.ownerId ?? userId;
 }
 
+// Dono da conta sempre tem acesso total. Um membro convidado pode ter o acesso a
+// dados financeiros (honorários/faturas) restringido pelo dono via Configurações > Equipes.
+export async function hasFinanceAccess(userId: string): Promise<boolean> {
+  const membership = await prisma.teamMember.findUnique({
+    where: { userId },
+    select: { canViewFinance: true },
+  });
+  return membership?.canViewFinance ?? true;
+}
+
 export async function getOrCreateTeam(ownerId: string) {
   const existing = await prisma.team.findUnique({ where: { ownerId } });
   if (existing) return existing;

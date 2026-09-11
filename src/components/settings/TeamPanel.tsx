@@ -7,7 +7,7 @@ type TeamData = {
   isOwner: boolean;
   team: { id: string; name: string } | null;
   owner: { name: string; email: string } | null;
-  members: { id: string; name: string; email: string; joinedAt: string }[];
+  members: { id: string; name: string; email: string; joinedAt: string; canViewFinance: boolean }[];
   invites: { id: string; email: string; code: string; createdAt: string }[];
 };
 
@@ -65,6 +65,15 @@ export function TeamPanel() {
   const removeMember = async (id: string) => {
     if (!confirm("Remover este membro da equipe? Ele perderá acesso aos dados compartilhados.")) return;
     await fetch(`/api/team/members/${id}`, { method: "DELETE" });
+    load();
+  };
+
+  const toggleFinanceAccess = async (id: string, canViewFinance: boolean) => {
+    await fetch(`/api/team/members/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ canViewFinance }),
+    });
     load();
   };
 
@@ -172,17 +181,29 @@ export function TeamPanel() {
         {data.members.length === 0 ? (
           <p className="text-sm text-neutral-500">Nenhum membro ainda além de você.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {data.members.map((m) => (
-              <li key={m.id} className="flex items-center justify-between text-sm">
-                <span>
+              <li key={m.id} className="flex items-center justify-between text-sm gap-3">
+                <span className="min-w-0 truncate">
                   {m.name || m.email} <span className="text-neutral-400 text-xs">({m.email})</span>
                 </span>
-                {data.isOwner && (
-                  <button onClick={() => removeMember(m.id)} className="text-xs text-red-600 hover:underline">
-                    Remover
-                  </button>
-                )}
+                <div className="flex items-center gap-3 shrink-0">
+                  {data.isOwner && (
+                    <label className="flex items-center gap-1.5 text-xs text-neutral-500 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={m.canViewFinance}
+                        onChange={(e) => toggleFinanceAccess(m.id, e.target.checked)}
+                      />
+                      Vê financeiro
+                    </label>
+                  )}
+                  {data.isOwner && (
+                    <button onClick={() => removeMember(m.id)} className="text-xs text-red-600 hover:underline">
+                      Remover
+                    </button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

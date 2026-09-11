@@ -1,0 +1,119 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Receipt } from "lucide-react";
+import { formatCurrency, formatDateBR } from "@/lib/format";
+import { EmptyState } from "@/components/EmptyState";
+
+type InvoiceItem = { id: string; description: string; quantity: number; unitPrice: number };
+type Invoice = {
+  id: string;
+  number: string;
+  clientName: string;
+  currency: string;
+  status: string;
+  issueDate: string;
+  taxRate: number;
+  items: InvoiceItem[];
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Rascunho",
+  ISSUED: "Emitida",
+  PAID: "Paga",
+};
+
+export function FaturasView() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/invoices")
+      .then((res) => {
+        if (!res.ok) throw new Error("Falha ao carregar faturas");
+        return res.json();
+      })
+      .then((data) => {
+        setInvoices(data.invoices ?? []);
+      })
+      .catch(() => setError("Não foi possível carregar as faturas. Tente recarregar a página."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const totalOf = (inv: Invoice) => {
+    const subtotal = inv.items.reduce((sum, it) => sum + it.quantity * it.unitPrice, 0);
+    return subtotal * (1 + inv.taxRate / 100);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Faturas</h2>
+          <p className="text-neutral-500 text-sm mt-1">Emissão de faturas em formato aceito internacionalmente.</p>
+        </div>
+        <Link href="/faturas/nova" className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium">
+          Nova fatura
+        </Link>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-neutral-500 border-b border-neutral-200 dark:border-neutral-800">
+              <th className="py-2 px-3">Número</th>
+              <th className="py-2 px-3">Cliente</th>
+              <th className="py-2 px-3">Data de emissão</th>
+              <th className="py-2 px-3">Total</th>
+              <th className="py-2 px-3">Status</th>
+              <th className="py-2 px-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={6} className="py-4 text-center text-neutral-500">
+                  Carregando...
+                </td>
+              </tr>
+            )}
+            {!loading && !error && invoices.length === 0 && (
+              <tr>
+                <td colSpan={6}>
+                  <EmptyState
+                    icon={Receipt}
+                    title="Nenhuma fatura emitida ainda"
+                    description="Clique em Nova fatura para emitir a primeira."
+                  />
+                </td>
+              </tr>
+            )}
+            {invoices.map((inv) => (
+              <tr key={inv.id} className="border-b border-neutral-100 dark:border-neutral-900">
+                <td className="py-2 px-3 font-medium">{inv.number}</td>
+                <td className="py-2 px-3">{inv.clientName}</td>
+                <td className="py-2 px-3">{formatDateBR(inv.issueDate)}</td>
+                <td className="py-2 px-3">{formatCurrency(totalOf(inv), inv.currency)}</td>
+                <td className="py-2 px-3">{STATUS_LABEL[inv.status] ?? inv.status}</td>
+                <td className="py-2 px-3">
+                  <a
+                    href={`/api/invoices/${inv.id}/pdf`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 text-xs"
+                  >
+                    Ver PDF
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

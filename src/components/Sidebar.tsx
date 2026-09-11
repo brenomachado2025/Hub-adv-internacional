@@ -34,8 +34,8 @@ const NAV_ITEMS = [
   { href: "/sancoes", label: "Sanções (ONU/OFAC/UE)", icon: ShieldAlert },
   { href: "/notificacoes", label: "Notificações", icon: Bell },
   { href: "/auditoria", label: "Auditoria", icon: ClipboardList },
-  { href: "/honorarios", label: "Honorários & Câmbio", icon: Landmark },
-  { href: "/faturas", label: "Faturas", icon: Receipt },
+  { href: "/honorarios", label: "Honorários & Câmbio", icon: Landmark, financeOnly: true },
+  { href: "/faturas", label: "Faturas", icon: Receipt, financeOnly: true },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/automacoes", label: "Automações", icon: Zap },
   { href: "/reunioes", label: "Reuniões & Fusos", icon: Globe },
@@ -44,11 +44,15 @@ const NAV_ITEMS = [
 export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canViewFinance, setCanViewFinance] = useState(true);
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => res.json())
-      .then((data) => setIsAdmin(data.user?.role === "ADMIN"))
+      .then((data) => {
+        setIsAdmin(data.user?.role === "ADMIN");
+        setCanViewFinance(data.user?.canViewFinance ?? true);
+      })
       .catch(() => {});
   }, []);
 
@@ -84,7 +88,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter((item) => !item.financeOnly || canViewFinance).map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
             return (

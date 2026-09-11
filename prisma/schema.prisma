@@ -61,12 +61,13 @@ model Team {
 }
 
 model TeamMember {
-  id       String   @id @default(cuid())
-  teamId   String
-  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  userId   String   @unique
-  user     User     @relation("TeamMembership", fields: [userId], references: [id], onDelete: Cascade)
-  joinedAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  teamId          String
+  team            Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId          String   @unique
+  user            User     @relation("TeamMembership", fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt        DateTime @default(now())
+  canViewFinance  Boolean  @default(true) // dono pode restringir acesso a honorários/faturas por membro
 
   @@index([teamId])
 }

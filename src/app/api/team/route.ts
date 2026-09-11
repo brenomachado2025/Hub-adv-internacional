@@ -21,7 +21,13 @@ export async function GET() {
       isOwner: false,
       team: { id: membership.team.id, name: membership.team.name },
       owner: { id: membership.team.ownerId, name: membership.team.owner.name, email: membership.team.owner.email },
-      members: members.map((m) => ({ id: m.userId, name: m.user.name, email: m.user.email, joinedAt: m.joinedAt })),
+      members: members.map((m) => ({
+        id: m.userId,
+        name: m.user.name,
+        email: m.user.email,
+        joinedAt: m.joinedAt,
+        canViewFinance: m.canViewFinance,
+      })),
       invites: [],
     });
   }
@@ -46,7 +52,13 @@ export async function GET() {
     isOwner: true,
     team: { id: team.id, name: team.name },
     owner: ownerInfo,
-    members: members.map((m) => ({ id: m.userId, name: m.user.name, email: m.user.email, joinedAt: m.joinedAt })),
+    members: members.map((m) => ({
+      id: m.userId,
+      name: m.user.name,
+      email: m.user.email,
+      joinedAt: m.joinedAt,
+      canViewFinance: m.canViewFinance,
+    })),
     invites: invites.map((i) => ({ id: i.id, email: i.email, code: i.code, createdAt: i.createdAt })),
   });
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getWorkspaceOwnerId } from "@/lib/team";
+import { getWorkspaceOwnerId, hasFinanceAccess } from "@/lib/team";
 import { createInvoiceWithNumber } from "@/lib/finance/invoice-number";
 
 export async function POST(
@@ -11,6 +11,9 @@ export async function POST(
 ) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (!(await hasFinanceAccess(user.userId))) {
+    return NextResponse.json({ error: "Sem acesso a dados financeiros" }, { status: 403 });
+  }
   const workspaceUserId = await getWorkspaceOwnerId(user.userId);
 
   const { id, contractId, installmentId } = await params;

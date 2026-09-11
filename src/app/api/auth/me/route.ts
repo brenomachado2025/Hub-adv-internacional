@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { hasFinanceAccess } from "@/lib/team";
 
 export async function GET() {
   const session = await getCurrentUser();
@@ -16,7 +17,9 @@ export async function GET() {
 
   if (!dbUser) return NextResponse.json({ user: null }, { status: 200 });
 
-  return NextResponse.json({ user: dbUser });
+  const canViewFinance = await hasFinanceAccess(session.userId);
+
+  return NextResponse.json({ user: { ...dbUser, canViewFinance } });
 }
 
 export async function PATCH(req: NextRequest) {

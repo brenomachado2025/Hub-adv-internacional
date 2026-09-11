@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Lock } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { formatCurrency, formatDateBR } from "@/lib/format";
 
@@ -47,10 +47,15 @@ export function FinanceTab({ clientId }: { clientId: string }) {
   const [caseId, setCaseId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [forbidden, setForbidden] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/crm/clients/${clientId}/contracts`);
+      if (res.status === 403) {
+        setForbidden(true);
+        return;
+      }
       if (!res.ok) throw new Error();
       const data = await res.json();
       setContracts(data.contracts ?? []);
@@ -66,6 +71,20 @@ export function FinanceTab({ clientId }: { clientId: string }) {
       .then((data) => setCases((data.cases ?? []).map((c: { id: string; title: string }) => ({ id: c.id, title: c.title }))))
       .catch(() => {});
   }, [clientId, load]);
+
+  if (forbidden) {
+    return (
+      <div className="flex flex-col items-center text-center gap-2 py-10 px-4">
+        <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400">
+          <Lock size={22} strokeWidth={1.75} />
+        </div>
+        <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">Sem acesso a dados financeiros</p>
+        <p className="text-xs text-neutral-400 max-w-xs">
+          O dono da conta restringiu seu acesso a honorários e faturas. Fale com ele se precisar dessa informação.
+        </p>
+      </div>
+    );
+  }
 
   const createContract = async () => {
     const amount = parseFloat(totalAmount.replace(",", "."));

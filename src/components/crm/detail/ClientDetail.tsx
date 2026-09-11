@@ -37,6 +37,14 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const [client, setClient] = useState<CrmClient | null>(null);
   const [tab, setTab] = useState<Tab>("Visão Geral");
   const [editing, setEditing] = useState(false);
+  const [canViewFinance, setCanViewFinance] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => setCanViewFinance(data.user?.canViewFinance ?? true))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/crm/clients/${clientId}`);
@@ -157,7 +165,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
       </div>
 
       <div className="flex flex-wrap gap-2 border-b border-neutral-200 dark:border-neutral-800">
-        {TABS.map((t) => (
+        {TABS.filter((t) => t !== "Financeiro" || canViewFinance).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
