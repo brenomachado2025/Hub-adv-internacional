@@ -19,6 +19,11 @@ export async function GET() {
       bodyPreview: text.slice(0, 1500),
     });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err), keyLength: apiKey.length });
+    const cause = err instanceof Error && "cause" in err ? (err as { cause?: unknown }).cause : undefined;
+    return NextResponse.json({
+      error: err instanceof Error ? err.message : String(err),
+      cause: cause instanceof Error ? { message: cause.message, name: cause.name, code: (cause as { code?: string }).code } : cause,
+      keyLength: apiKey.length,
+    });
   }
 }
