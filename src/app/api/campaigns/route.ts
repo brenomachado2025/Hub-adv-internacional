@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getWorkspaceOwnerId } from "@/lib/team";
 import { buildClientWhere } from "@/lib/crm/filters";
-import { sendEmailBatch, MissingEmailKeyError } from "@/lib/email";
+import { sendEmailBatch, emailTemplate, MissingEmailKeyError } from "@/lib/email";
 
 export const maxDuration = 120;
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Nenhum cliente com e-mail cadastrado nesse filtro" }, { status: 400 });
   }
 
-  const html = body.body.trim().replace(/\n/g, "<br>");
+  const html = emailTemplate(body.body.trim().replace(/\n/g, "<br>"));
 
   let sendResults: { to: string; ok: boolean; error?: string }[] = [];
   let campaignStatus = "SENT";

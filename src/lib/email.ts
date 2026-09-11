@@ -4,6 +4,30 @@ export class MissingEmailKeyError extends Error {}
 
 const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL || "Internacional Hub <onboarding@resend.dev>";
 
+// Clientes de e-mail não carregam /public direto - precisa ser uma URL http(s)
+// pública. Usa o domínio de produção do próprio Hub, que já serve essa imagem.
+const LOGO_URL = "https://hubadvinternacional2027.vercel.app/logo.png";
+
+// Cabeçalho/rodapé padrão com o logo do Hub, reaproveitado em todo e-mail
+// transacional (recuperação de senha, e-mail em massa, etc.) para manter a
+// identidade visual consistente.
+export function emailTemplate(bodyHtml: string): string {
+  return `
+    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto;">
+      <div style="text-align: center; padding: 24px 0 8px;">
+        <img src="${LOGO_URL}" alt="Internacional Hub" width="56" height="56" style="border-radius: 8px;" />
+        <p style="font-weight: bold; letter-spacing: 0.5px; color: #0e1b30; margin: 8px 0 0;">INTERNACIONAL HUB</p>
+      </div>
+      <div style="color: #1f2937; font-size: 14px; line-height: 1.6; padding: 8px 24px 24px;">
+        ${bodyHtml}
+      </div>
+      <div style="text-align: center; color: #9ca3af; font-size: 11px; padding: 16px 0; border-top: 1px solid #e5e7eb;">
+        Internacional Hub — sanções internacionais &amp; due diligence
+      </div>
+    </div>
+  `;
+}
+
 export async function sendEmailBatch(
   emails: { to: string; subject: string; html: string }[]
 ): Promise<{ to: string; ok: boolean; error?: string }[]> {

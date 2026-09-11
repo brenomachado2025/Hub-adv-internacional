@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendEmailBatch } from "@/lib/email";
+import { sendEmailBatch, emailTemplate } from "@/lib/email";
 
 const GENERIC_MESSAGE = "Se esse e-mail existir na nossa base, um código de verificação foi enviado.";
 
@@ -36,12 +36,12 @@ export async function POST(req: NextRequest) {
       {
         to: user.email,
         subject: "Código para redefinir sua senha - Internacional Hub",
-        html: `
+        html: emailTemplate(`
           <p>Olá${user.name ? `, ${user.name}` : ""}!</p>
           <p>Recebemos um pedido para redefinir a senha da sua conta no Internacional Hub.</p>
-          <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 24px 0;">${code}</p>
+          <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 24px 0; text-align: center;">${code}</p>
           <p>Esse código vale por 15 minutos. Se você não pediu essa redefinição, pode ignorar este e-mail.</p>
-        `,
+        `),
       },
     ]);
   } catch {
