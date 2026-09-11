@@ -2,7 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
 import { COOKIE_NAME as SUPERADMIN_COOKIE_NAME, verifySuperadminToken } from "@/lib/auth/superadmin-session";
 
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/robots.txt", "/sitemap.xml", "/superadmin/login"];
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/signup",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/superadmin/login",
+  "/manifest.json",
+  "/sw.js",
+];
 const PUBLIC_PREFIXES = ["/scenes/"];
 const PUBLIC_API_PREFIXES = [
   "/api/auth/login",
