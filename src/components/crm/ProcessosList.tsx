@@ -22,13 +22,19 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 
 export function ProcessosList() {
   const [cases, setCases] = useState<CaseItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/cases")
-      .then((res) => res.json())
-      .then((data) => setCases(data.cases ?? []));
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => setCases(data.cases ?? []))
+      .catch(() => setError("Não foi possível carregar os processos. Tente recarregar a página."));
   }, []);
 
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
   if (!cases) return <p className="text-sm text-neutral-500">Carregando...</p>;
   if (cases.length === 0) {
     return (

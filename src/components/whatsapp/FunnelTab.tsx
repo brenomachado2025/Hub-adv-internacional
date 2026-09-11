@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "@/components/Toast";
 
 type FunnelMessage = {
   key: string;
@@ -11,13 +12,19 @@ type FunnelMessage = {
 };
 
 export function FunnelTab() {
+  const showToast = useToast();
   const [messages, setMessages] = useState<FunnelMessage[]>([]);
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
   const load = async () => {
-    const res = await fetch("/api/whatsapp/funnel");
-    const data = await res.json();
-    setMessages(data.messages ?? []);
+    try {
+      const res = await fetch("/api/whatsapp/funnel");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setMessages(data.messages ?? []);
+    } catch {
+      showToast("Não foi possível carregar as mensagens do funil.", "error");
+    }
   };
 
   useEffect(() => {
@@ -26,14 +33,20 @@ export function FunnelTab() {
 
   const save = async (key: string, text: string) => {
     setSavingKey(key);
-    const res = await fetch("/api/whatsapp/funnel", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, text }),
-    });
-    const data = await res.json();
-    setMessages((prev) => prev.map((m) => (m.key === key ? { ...m, text: data.text, isDefault: text.trim() === "" } : m)));
-    setSavingKey(null);
+    try {
+      const res = await fetch("/api/whatsapp/funnel", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, text }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setMessages((prev) => prev.map((m) => (m.key === key ? { ...m, text: data.text, isDefault: text.trim() === "" } : m)));
+    } catch {
+      showToast("Não foi possível salvar. Tente novamente.", "error");
+    } finally {
+      setSavingKey(null);
+    }
   };
 
   return (

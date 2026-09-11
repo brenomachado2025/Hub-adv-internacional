@@ -1,18 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useToast } from "@/components/Toast";
 
 type Note = { id: string; authorName: string; text: string; createdAt: string };
 
 export function NotesTab({ clientId }: { clientId: string }) {
+  const showToast = useToast();
   const [notes, setNotes] = useState<Note[]>([]);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/crm/clients/${clientId}/notes`);
-    const data = await res.json();
-    setNotes(data.notes ?? []);
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/notes`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setNotes(data.notes ?? []);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    }
   }, [clientId]);
 
   useEffect(() => {
@@ -22,14 +31,21 @@ export function NotesTab({ clientId }: { clientId: string }) {
   const submit = async () => {
     if (!draft.trim()) return;
     setSaving(true);
-    await fetch(`/api/crm/clients/${clientId}/notes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: draft }),
-    });
-    setDraft("");
-    setSaving(false);
-    load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: draft }),
+      });
+      if (!res.ok) throw new Error();
+      setDraft("");
+      await load();
+      showToast("Anotação adicionada.");
+    } catch {
+      showToast("Não foi possível salvar a anotação. Tente novamente.", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -54,7 +70,8 @@ export function NotesTab({ clientId }: { clientId: string }) {
       </div>
 
       <div className="space-y-3">
-        {notes.length === 0 && <p className="text-sm text-neutral-500">Nenhuma anotação ainda.</p>}
+        {loadError && <p className="text-sm text-red-600">Não foi possível carregar as anotações.</p>}
+        {!loadError && notes.length === 0 && <p className="text-sm text-neutral-500">Nenhuma anotação ainda.</p>}
         {notes.map((n) => (
           <div key={n.id} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3">
             <p className="text-sm whitespace-pre-wrap">{n.text}</p>

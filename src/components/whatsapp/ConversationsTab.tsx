@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { crmStatusLabel } from "@/lib/data/crm";
+import { useToast } from "@/components/Toast";
 
 type Conversation = {
   clientId: string;
@@ -30,6 +31,7 @@ function formatTime(iso: string) {
 }
 
 export function ConversationsTab() {
+  const showToast = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,15 +40,25 @@ export function ConversationsTab() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(async () => {
-    const res = await fetch("/api/whatsapp/conversations");
-    const data = await res.json();
-    setConversations(data.conversations ?? []);
+    try {
+      const res = await fetch("/api/whatsapp/conversations");
+      if (!res.ok) return;
+      const data = await res.json();
+      setConversations(data.conversations ?? []);
+    } catch {
+      // Falha pontual numa consulta de polling se autocorrige sozinha.
+    }
   }, []);
 
   const loadThread = useCallback(async (clientId: string) => {
-    const res = await fetch(`/api/whatsapp/conversations/${clientId}/messages`);
-    const data = await res.json();
-    setMessages(data.messages ?? []);
+    try {
+      const res = await fetch(`/api/whatsapp/conversations/${clientId}/messages`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setMessages(data.messages ?? []);
+    } catch {
+      // idem
+    }
   }, []);
 
   useEffect(() => {
@@ -71,13 +83,20 @@ export function ConversationsTab() {
     setSending(true);
     const text = draft;
     setDraft("");
-    await fetch(`/api/whatsapp/conversations/${selected.clientId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    await loadThread(selected.clientId);
-    setSending(false);
+    try {
+      const res = await fetch(`/api/whatsapp/conversations/${selected.clientId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error();
+      await loadThread(selected.clientId);
+    } catch {
+      setDraft(text);
+      showToast("Não foi possível enviar a mensagem. Tente novamente.", "error");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

@@ -13,9 +13,14 @@ export function MeetingsTab({ clientId }: { clientId: string }) {
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/crm/clients/${clientId}/meetings`);
-    const data = await res.json();
-    setMeetings(data.meetings ?? []);
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/meetings`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setMeetings(data.meetings ?? []);
+    } catch {
+      setError("Não foi possível carregar as reuniões. Tente recarregar a página.");
+    }
   }, [clientId]);
 
   useEffect(() => {
@@ -29,21 +34,26 @@ export function MeetingsTab({ clientId }: { clientId: string }) {
     }
     setSaving(true);
     setError("");
-    const res = await fetch(`/api/crm/clients/${clientId}/meetings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, scheduledFor, notes }),
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Erro ao agendar.");
-    } else {
-      setTitle("");
-      setScheduledFor("");
-      setNotes("");
-      load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/meetings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, scheduledFor, notes }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Erro ao agendar.");
+      } else {
+        setTitle("");
+        setScheduledFor("");
+        setNotes("");
+        await load();
+      }
+    } catch {
+      setError("Falha de conexão. Tente novamente.");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const now = new Date();

@@ -24,12 +24,20 @@ export default function NotificacoesPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selected, setSelected] = useState<Notification | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
-    const res = await fetch("/api/notifications");
-    const data = await res.json();
-    setNotifications(data.notifications ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/notifications");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setNotifications(data.notifications ?? []);
+      setError(null);
+    } catch {
+      setError("Não foi possível carregar as notificações. Tente recarregar a página.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -77,7 +85,8 @@ export default function NotificacoesPage() {
       <div className="grid md:grid-cols-2 gap-4">
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 divide-y divide-neutral-100 dark:divide-neutral-900 max-h-[70vh] overflow-y-auto">
           {loading && <p className="p-4 text-sm text-neutral-500">Carregando...</p>}
-          {!loading && notifications.length === 0 && (
+          {error && <p className="p-4 text-sm text-red-600">{error}</p>}
+          {!loading && !error && notifications.length === 0 && (
             <p className="p-4 text-sm text-neutral-500">Nenhuma notificação ainda.</p>
           )}
           {notifications.map((n) => (

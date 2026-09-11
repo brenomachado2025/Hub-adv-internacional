@@ -22,12 +22,21 @@ const TYPE_LABEL: Record<string, string> = {
 
 export function ActivityTab({ clientId }: { clientId: string }) {
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch(`/api/crm/clients/${clientId}/activity`)
-      .then((res) => res.json())
-      .then((data) => setActivities(data.activities ?? []));
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => setActivities(data.activities ?? []))
+      .catch(() => setError(true));
   }, [clientId]);
+
+  if (error) {
+    return <p className="text-sm text-red-600">Não foi possível carregar a atividade. Tente recarregar a página.</p>;
+  }
 
   if (activities.length === 0) {
     return <p className="text-sm text-neutral-500">Nenhuma atividade registrada ainda.</p>;

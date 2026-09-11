@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
+import { useToast } from "@/components/Toast";
 
 type Task = {
   id: string;
@@ -13,16 +14,24 @@ type Task = {
 };
 
 export function TasksTab({ clientId }: { clientId: string }) {
+  const showToast = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/crm/clients/${clientId}/tasks`);
-    const data = await res.json();
-    setTasks(data.tasks ?? []);
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/tasks`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setTasks(data.tasks ?? []);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    }
   }, [clientId]);
 
   useEffect(() => {
@@ -32,30 +41,51 @@ export function TasksTab({ clientId }: { clientId: string }) {
   const submit = async () => {
     if (!title.trim()) return;
     setSaving(true);
-    await fetch(`/api/crm/clients/${clientId}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, assignee, dueDate: dueDate || undefined }),
-    });
-    setTitle("");
-    setAssignee("");
-    setDueDate("");
-    setSaving(false);
-    load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, assignee, dueDate: dueDate || undefined }),
+      });
+      if (!res.ok) throw new Error();
+      setTitle("");
+      setAssignee("");
+      setDueDate("");
+      await load();
+    } catch {
+      showToast("Não foi possível salvar a tarefa. Tente novamente.", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggle = async (task: Task) => {
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: task.status === "DONE" ? "PENDING" : "DONE" } : t)));
-    await fetch(`/api/crm/clients/${clientId}/tasks/${task.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: task.status === "DONE" ? "PENDING" : "DONE" }),
-    });
+    const nextStatus = task.status === "DONE" ? "PENDING" : "DONE";
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t)));
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: task.status } : t)));
+      showToast("Não foi possível atualizar a tarefa. Tente novamente.", "error");
+    }
   };
 
   const remove = async (id: string) => {
+    if (!confirm("Remover esta tarefa?")) return;
+    const previous = tasks;
     setTasks((prev) => prev.filter((t) => t.id !== id));
-    await fetch(`/api/crm/clients/${clientId}/tasks/${id}`, { method: "DELETE" });
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/tasks/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+    } catch {
+      setTasks(previous);
+      showToast("Não foi possível remover a tarefa. Tente novamente.", "error");
+    }
   };
 
   return (
@@ -98,7 +128,8 @@ export function TasksTab({ clientId }: { clientId: string }) {
       </div>
 
       <div className="space-y-2">
-        {tasks.length === 0 && <p className="text-sm text-neutral-500">Nenhuma tarefa pendente.</p>}
+        {loadError && <p className="text-sm text-red-600">Não foi possível carregar as tarefas.</p>}
+        {!loadError && tasks.length === 0 && <p className="text-sm text-neutral-500">Nenhuma tarefa pendente.</p>}
         {tasks.map((t) => (
           <div
             key={t.id}

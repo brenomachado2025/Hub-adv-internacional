@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { DOCUMENT_PLACEHOLDERS } from "@/lib/data/documents";
+import { useToast } from "@/components/Toast";
 
 type Template = { id: string; title: string; body: string };
 type GeneratedDoc = { id: string; title: string; createdAt: string; createdBy: string; status: string };
@@ -13,6 +14,7 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 };
 
 export function DocumentsTab({ clientId }: { clientId: string }) {
+  const showToast = useToast();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [documents, setDocuments] = useState<GeneratedDoc[]>([]);
   const [isOwner, setIsOwner] = useState(true);
@@ -24,59 +26,88 @@ export function DocumentsTab({ clientId }: { clientId: string }) {
   const [savingTemplate, setSavingTemplate] = useState(false);
 
   const loadTemplates = useCallback(async () => {
-    const res = await fetch("/api/crm/document-templates");
-    const data = await res.json();
-    setTemplates(data.templates ?? []);
-  }, []);
+    try {
+      const res = await fetch("/api/crm/document-templates");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setTemplates(data.templates ?? []);
+    } catch {
+      showToast("Não foi possível carregar os modelos de documento.", "error");
+    }
+  }, [showToast]);
 
   const loadDocuments = useCallback(async () => {
-    const res = await fetch(`/api/crm/clients/${clientId}/documents`);
-    const data = await res.json();
-    setDocuments(data.documents ?? []);
-  }, [clientId]);
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/documents`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setDocuments(data.documents ?? []);
+    } catch {
+      showToast("Não foi possível carregar os documentos.", "error");
+    }
+  }, [clientId, showToast]);
 
   useEffect(() => {
     loadTemplates();
     loadDocuments();
     fetch("/api/team")
       .then((res) => res.json())
-      .then((data) => setIsOwner(!!data.isOwner));
+      .then((data) => setIsOwner(!!data.isOwner))
+      .catch(() => {});
   }, [loadTemplates, loadDocuments]);
 
   const setDocStatus = async (docId: string, status: string) => {
-    await fetch(`/api/crm/clients/${clientId}/documents/${docId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    loadDocuments();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/documents/${docId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error();
+      await loadDocuments();
+    } catch {
+      showToast("Não foi possível atualizar o documento. Tente novamente.", "error");
+    }
   };
 
   const generate = async () => {
     if (!selectedTemplate) return;
     setGenerating(true);
-    await fetch(`/api/crm/clients/${clientId}/documents`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ templateId: selectedTemplate }),
-    });
-    setGenerating(false);
-    loadDocuments();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId: selectedTemplate }),
+      });
+      if (!res.ok) throw new Error();
+      await loadDocuments();
+      showToast("Documento gerado.");
+    } catch {
+      showToast("Não foi possível gerar o documento. Tente novamente.", "error");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const saveTemplate = async () => {
     if (!newTitle.trim() || !newBody.trim()) return;
     setSavingTemplate(true);
-    await fetch("/api/crm/document-templates", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle, body: newBody }),
-    });
-    setNewTitle("");
-    setNewBody("");
-    setSavingTemplate(false);
-    setShowNewTemplate(false);
-    loadTemplates();
+    try {
+      const res = await fetch("/api/crm/document-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle, body: newBody }),
+      });
+      if (!res.ok) throw new Error();
+      setNewTitle("");
+      setNewBody("");
+      setShowNewTemplate(false);
+      await loadTemplates();
+    } catch {
+      showToast("Não foi possível salvar o modelo. Tente novamente.", "error");
+    } finally {
+      setSavingTemplate(false);
+    }
   };
 
   return (

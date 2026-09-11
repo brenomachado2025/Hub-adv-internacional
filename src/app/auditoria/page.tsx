@@ -16,6 +16,8 @@ const ACTION_LABEL: Record<string, string> = {
   SEARCH: "Busca",
   VIEW: "Consulta",
   EXPORT: "Exportação",
+  IMPORT: "Importação",
+  CREATE: "Criação",
   SYNC: "Sincronização",
 };
 
@@ -31,13 +33,21 @@ export default function AuditoriaPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [moduleFilter, setModuleFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = async (mod: string) => {
     setLoading(true);
-    const res = await fetch(`/api/audit${mod ? `?module=${mod}` : ""}`);
-    const data = await res.json();
-    setLogs(data.logs ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/audit${mod ? `?module=${mod}` : ""}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setLogs(data.logs ?? []);
+      setError(null);
+    } catch {
+      setError("Não foi possível carregar o histórico. Tente recarregar a página.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -97,7 +107,14 @@ export default function AuditoriaPage() {
                 </td>
               </tr>
             )}
-            {!loading && logs.length === 0 && (
+            {error && (
+              <tr>
+                <td colSpan={6} className="py-4 text-center text-red-600">
+                  {error}
+                </td>
+              </tr>
+            )}
+            {!loading && !error && logs.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-4 text-center text-neutral-500">
                   Nenhum registro encontrado.

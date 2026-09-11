@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { NORTH_AMERICA_COUNTRIES, CURRENCIES } from "@/lib/data/jurisdictions";
+import { formatCurrency } from "@/lib/format";
 
 type FeeCalculation = {
   id: string;
@@ -29,13 +30,20 @@ export default function HonorariosPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<FeeCalculation | null>(null);
   const [history, setHistory] = useState<FeeCalculation[]>([]);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   const selectedCountry = NORTH_AMERICA_COUNTRIES.find((c) => c.code === country);
 
   const loadHistory = async () => {
-    const res = await fetch("/api/fees");
-    const data = await res.json();
-    setHistory(data.calculations ?? []);
+    try {
+      const res = await fetch("/api/fees");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setHistory(data.calculations ?? []);
+      setHistoryError(null);
+    } catch {
+      setHistoryError("Não foi possível carregar o histórico. Tente recarregar a página.");
+    }
   };
 
   useEffect(() => {
@@ -187,14 +195,9 @@ export default function HonorariosPage() {
       {lastResult && (
         <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 p-4">
           <p className="text-sm">
-            <strong>
-              {lastResult.baseAmount.toFixed(2)} {lastResult.baseCurrency}
-            </strong>{" "}
-            equivale a{" "}
-            <strong>
-              {lastResult.convertedAmount.toFixed(2)} {lastResult.targetCurrency}
-            </strong>{" "}
-            (taxa {lastResult.rate} em {lastResult.rateDate})
+            <strong>{formatCurrency(lastResult.baseAmount, lastResult.baseCurrency)}</strong> equivale a{" "}
+            <strong>{formatCurrency(lastResult.convertedAmount, lastResult.targetCurrency)}</strong> (taxa{" "}
+            {lastResult.rate} em {lastResult.rateDate})
           </p>
           <Link
             href={`/faturas/nova?feeCalculationId=${lastResult.id}`}
@@ -220,7 +223,14 @@ export default function HonorariosPage() {
             </tr>
           </thead>
           <tbody>
-            {history.length === 0 && (
+            {historyError && (
+              <tr>
+                <td colSpan={7} className="py-4 text-center text-red-600">
+                  {historyError}
+                </td>
+              </tr>
+            )}
+            {!historyError && history.length === 0 && (
               <tr>
                 <td colSpan={7} className="py-4 text-center text-neutral-500">
                   Nenhum cálculo realizado ainda.
@@ -231,12 +241,8 @@ export default function HonorariosPage() {
               <tr key={h.id} className="border-b border-neutral-100 dark:border-neutral-900">
                 <td className="py-2 px-3 whitespace-nowrap">{new Date(h.createdAt).toLocaleString("pt-BR")}</td>
                 <td className="py-2 px-3">{h.description || "-"}</td>
-                <td className="py-2 px-3">
-                  {h.baseAmount.toFixed(2)} {h.baseCurrency}
-                </td>
-                <td className="py-2 px-3">
-                  {h.convertedAmount.toFixed(2)} {h.targetCurrency}
-                </td>
+                <td className="py-2 px-3">{formatCurrency(h.baseAmount, h.baseCurrency)}</td>
+                <td className="py-2 px-3">{formatCurrency(h.convertedAmount, h.targetCurrency)}</td>
                 <td className="py-2 px-3">
                   {h.rate} ({h.rateDate})
                 </td>

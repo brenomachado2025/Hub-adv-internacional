@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useToast } from "@/components/Toast";
+import { formatCurrency, formatDateBR } from "@/lib/format";
 
 type Installment = {
   id: string;
@@ -31,6 +33,7 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 };
 
 export function FinanceTab({ clientId }: { clientId: string }) {
+  const showToast = useToast();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [cases, setCases] = useState<CaseOption[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -46,16 +49,22 @@ export function FinanceTab({ clientId }: { clientId: string }) {
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/crm/clients/${clientId}/contracts`);
-    const data = await res.json();
-    setContracts(data.contracts ?? []);
-  }, [clientId]);
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/contracts`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setContracts(data.contracts ?? []);
+    } catch {
+      showToast("Não foi possível carregar os contratos. Tente recarregar a página.", "error");
+    }
+  }, [clientId, showToast]);
 
   useEffect(() => {
     load();
     fetch(`/api/crm/clients/${clientId}/cases`)
       .then((res) => res.json())
-      .then((data) => setCases((data.cases ?? []).map((c: { id: string; title: string }) => ({ id: c.id, title: c.title }))));
+      .then((data) => setCases((data.cases ?? []).map((c: { id: string; title: string }) => ({ id: c.id, title: c.title }))))
+      .catch(() => {});
   }, [clientId, load]);
 
   const createContract = async () => {
@@ -66,49 +75,68 @@ export function FinanceTab({ clientId }: { clientId: string }) {
     }
     setSaving(true);
     setError("");
-    const res = await fetch(`/api/crm/clients/${clientId}/contracts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        description,
-        totalAmount: amount,
-        currency,
-        installmentsCount: parseInt(installmentsCount, 10) || 1,
-        firstDueDate,
-        caseId: caseId || undefined,
-      }),
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Erro ao fechar contrato.");
-    } else {
-      setDescription("");
-      setTotalAmount("");
-      setInstallmentsCount("1");
-      setFirstDueDate("");
-      setCaseId("");
-      setShowNew(false);
-      load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/contracts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description,
+          totalAmount: amount,
+          currency,
+          installmentsCount: parseInt(installmentsCount, 10) || 1,
+          firstDueDate,
+          caseId: caseId || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Erro ao fechar contrato.");
+      } else {
+        setDescription("");
+        setTotalAmount("");
+        setInstallmentsCount("1");
+        setFirstDueDate("");
+        setCaseId("");
+        setShowNew(false);
+        await load();
+      }
+    } catch {
+      setError("Falha de conexão. Tente novamente.");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const registerPayment = async (contract: Contract, installment: Installment) => {
-    await fetch(`/api/crm/clients/${clientId}/contracts/${contract.id}/installments/${installment.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "PAID" }),
-    });
-    load();
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/contracts/${contract.id}/installments/${installment.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PAID" }),
+      });
+      if (!res.ok) throw new Error();
+      await load();
+      showToast("Pagamento registrado.");
+    } catch {
+      showToast("Não foi possível registrar o pagamento. Tente novamente.", "error");
+    }
   };
 
   const generateInvoice = async (contract: Contract, installment: Installment) => {
-    const res = await fetch(
-      `/api/crm/clients/${clientId}/contracts/${contract.id}/installments/${installment.id}/invoice`,
-      { method: "POST" }
-    );
-    const data = await res.json();
-    if (data.invoice) window.open(`/api/invoices/${data.invoice.id}/pdf`, "_blank");
+    try {
+      const res = await fetch(
+        `/api/crm/clients/${clientId}/contracts/${contract.id}/installments/${installment.id}/invoice`,
+        { method: "POST" }
+      );
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (data.invoice) {
+        const opened = window.open(`/api/invoices/${data.invoice.id}/pdf`, "_blank");
+        if (!opened) showToast("Fatura gerada, mas o navegador bloqueou a nova aba. Veja em Faturas.");
+      }
+    } catch {
+      showToast("Não foi possível gerar a fatura. Tente novamente.", "error");
+    }
   };
 
   return (
@@ -201,11 +229,11 @@ export function FinanceTab({ clientId }: { clientId: string }) {
             >
               <div className="text-left">
                 <p className="text-sm font-medium">
-                  {c.description || "Contrato de honorários"} — {c.currency} {c.totalAmount.toFixed(2)}
+                  {c.description || "Contrato de honorários"} — {formatCurrency(c.totalAmount, c.currency)}
                   {c.case && <span className="text-neutral-400 font-normal"> · {c.case.title}</span>}
                 </p>
                 <p className="text-xs text-neutral-500">
-                  Saldo em aberto: {c.currency} {outstanding.toFixed(2)} · {c.installments.length} parcela(s)
+                  Saldo em aberto: {formatCurrency(outstanding, c.currency)} · {c.installments.length} parcela(s)
                 </p>
               </div>
               <ChevronDown size={18} className={`transition-transform ${expanded === c.id ? "rotate-180" : ""}`} />
@@ -221,10 +249,10 @@ export function FinanceTab({ clientId }: { clientId: string }) {
                     >
                       <div>
                         <p>
-                          Parcela {i.number} — {c.currency} {i.amount.toFixed(2)}
+                          Parcela {i.number} — {formatCurrency(i.amount, c.currency)}
                         </p>
                         <p className={`text-xs ${s.color}`}>
-                          {s.label} · vencimento {new Date(i.dueDate).toLocaleDateString("pt-BR")}
+                          {s.label} · vencimento {formatDateBR(i.dueDate)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

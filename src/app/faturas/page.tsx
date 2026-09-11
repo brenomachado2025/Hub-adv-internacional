@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { formatCurrency, formatDateBR } from "@/lib/format";
 
 type InvoiceItem = { id: string; description: string; quantity: number; unitPrice: number };
 type Invoice = {
@@ -24,14 +25,19 @@ const STATUS_LABEL: Record<string, string> = {
 export default function FaturasPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/invoices")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Falha ao carregar faturas");
+        return res.json();
+      })
       .then((data) => {
         setInvoices(data.invoices ?? []);
-        setLoading(false);
-      });
+      })
+      .catch(() => setError("Não foi possível carregar as faturas. Tente recarregar a página."))
+      .finally(() => setLoading(false));
   }, []);
 
   const totalOf = (inv: Invoice) => {
@@ -50,6 +56,8 @@ export default function FaturasPage() {
           Nova fatura
         </Link>
       </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
         <table className="w-full text-sm">
@@ -71,7 +79,7 @@ export default function FaturasPage() {
                 </td>
               </tr>
             )}
-            {!loading && invoices.length === 0 && (
+            {!loading && !error && invoices.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-4 text-center text-neutral-500">
                   Nenhuma fatura emitida ainda.
@@ -82,10 +90,8 @@ export default function FaturasPage() {
               <tr key={inv.id} className="border-b border-neutral-100 dark:border-neutral-900">
                 <td className="py-2 px-3 font-medium">{inv.number}</td>
                 <td className="py-2 px-3">{inv.clientName}</td>
-                <td className="py-2 px-3">{inv.issueDate}</td>
-                <td className="py-2 px-3">
-                  {inv.currency} {totalOf(inv).toFixed(2)}
-                </td>
+                <td className="py-2 px-3">{formatDateBR(inv.issueDate)}</td>
+                <td className="py-2 px-3">{formatCurrency(totalOf(inv), inv.currency)}</td>
                 <td className="py-2 px-3">{STATUS_LABEL[inv.status] ?? inv.status}</td>
                 <td className="py-2 px-3">
                   <a

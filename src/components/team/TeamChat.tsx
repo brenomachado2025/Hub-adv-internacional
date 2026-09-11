@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useToast } from "@/components/Toast";
 
 type Message = { id: string; authorId: string; authorName: string; text: string; createdAt: string };
 
@@ -17,6 +18,7 @@ function formatTime(iso: string) {
 }
 
 export function TeamChat() {
+  const showToast = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [selfId, setSelfId] = useState("");
   const [draft, setDraft] = useState("");
@@ -24,10 +26,16 @@ export function TeamChat() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/team/chat");
-    const data = await res.json();
-    setMessages(data.messages ?? []);
-    setSelfId(data.selfId ?? "");
+    try {
+      const res = await fetch("/api/team/chat");
+      if (!res.ok) return;
+      const data = await res.json();
+      setMessages(data.messages ?? []);
+      setSelfId(data.selfId ?? "");
+    } catch {
+      // Falha pontual numa consulta de polling a cada 4s se autocorrige na próxima
+      // tentativa - não vale interromper o usuário com um toast a cada rodada.
+    }
   }, []);
 
   useEffect(() => {
@@ -45,13 +53,20 @@ export function TeamChat() {
     setSending(true);
     const text = draft;
     setDraft("");
-    await fetch("/api/team/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    await load();
-    setSending(false);
+    try {
+      const res = await fetch("/api/team/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error();
+      await load();
+    } catch {
+      setDraft(text);
+      showToast("Não foi possível enviar a mensagem. Tente novamente.", "error");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

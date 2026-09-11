@@ -29,14 +29,24 @@ export function StatusTab() {
   const [requestingQr, setRequestingQr] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/whatsapp/status");
-    setData(await res.json());
+    try {
+      const res = await fetch("/api/whatsapp/status");
+      if (!res.ok) return;
+      setData(await res.json());
+    } catch {
+      // Falha pontual numa consulta de polling a cada 3s se autocorrige sozinha.
+    }
   }, []);
 
   const loadConfigs = useCallback(async () => {
-    const res = await fetch("/api/whatsapp/status-notifications");
-    const json = await res.json();
-    setConfigs(json.configs ?? []);
+    try {
+      const res = await fetch("/api/whatsapp/status-notifications");
+      if (!res.ok) return;
+      const json = await res.json();
+      setConfigs(json.configs ?? []);
+    } catch {
+      // idem
+    }
   }, []);
 
   useEffect(() => {

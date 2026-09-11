@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Copy, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { crmStatusLabel, nextCrmStatus, previousCrmStatus, formatDocument } from "@/lib/data/crm";
 import { ClientFormModal } from "@/components/crm/ClientFormModal";
+import { useToast } from "@/components/Toast";
 import type { CrmClient } from "@/components/crm/types";
 import { OverviewTab } from "./OverviewTab";
 import { NotesTab } from "./NotesTab";
@@ -32,6 +33,7 @@ type Tab = (typeof TABS)[number];
 
 export function ClientDetail({ clientId }: { clientId: string }) {
   const router = useRouter();
+  const showToast = useToast();
   const [client, setClient] = useState<CrmClient | null>(null);
   const [tab, setTab] = useState<Tab>("Visão Geral");
   const [editing, setEditing] = useState(false);
@@ -51,24 +53,41 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   }, [load]);
 
   const changeStatus = async (status: string) => {
+    const previous = client?.status;
     setClient((c) => (c ? { ...c, status } : c));
-    await fetch(`/api/crm/clients/${clientId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setClient((c) => (c && previous ? { ...c, status: previous } : c));
+      showToast("Não foi possível atualizar a etapa. Tente novamente.", "error");
+    }
   };
 
   const duplicate = async () => {
-    const res = await fetch(`/api/crm/clients/${clientId}/duplicate`, { method: "POST" });
-    const data = await res.json();
-    if (data.client) router.push(`/crm/${data.client.id}`);
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}/duplicate`, { method: "POST" });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (data.client) router.push(`/crm/${data.client.id}`);
+    } catch {
+      showToast("Não foi possível duplicar o cadastro. Tente novamente.", "error");
+    }
   };
 
   const remove = async () => {
     if (!confirm("Excluir este cliente? Essa ação não pode ser desfeita.")) return;
-    await fetch(`/api/crm/clients/${clientId}`, { method: "DELETE" });
-    router.push("/crm");
+    try {
+      const res = await fetch(`/api/crm/clients/${clientId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      router.push("/crm");
+    } catch {
+      showToast("Não foi possível excluir o cliente. Tente novamente.", "error");
+    }
   };
 
   if (!client) {
