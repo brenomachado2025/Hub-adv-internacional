@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { PasswordInput } from "@/components/PasswordInput";
+import { GoogleIcon } from "@/components/GoogleIcon";
 
 export function SignupForm() {
   const [name, setName] = useState("");
@@ -125,6 +126,20 @@ export function SignupForm() {
       >
         {loading ? "Criando conta..." : "Criar conta"}
       </button>
+
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
+        <span className="text-xs text-neutral-400">ou</span>
+        <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
+      </div>
+
+      <a
+        href="/api/auth/google"
+        className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800"
+      >
+        <GoogleIcon />
+        Continuar com o Google
+      </a>
 
       <p className="text-xs text-center text-neutral-500">
         Já tem conta?{" "}
