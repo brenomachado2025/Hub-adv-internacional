@@ -3,14 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Contact,
-  MessageCircle,
-  ShieldAlert,
-  Landmark,
-  Receipt,
-  Globe,
-  Scale,
-  MessagesSquare,
   ChevronDown,
   ArrowRight,
   AlertTriangle,
@@ -56,15 +48,17 @@ type Props = {
   onboarding: Onboarding;
 };
 
+// Mesmo emoji usado no menu lateral para cada modulo, dentro de um quadro
+// neutro (sem cor por item) - mantem consistencia visual com a barra lateral.
 const QUICK_LINKS = [
-  { href: "/crm", label: "CRM de Clientes", icon: Contact, color: "text-blue-600 bg-blue-50 dark:bg-blue-950" },
-  { href: "/whatsapp", label: "WhatsApp", icon: MessageCircle, color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950" },
-  { href: "/sancoes", label: "Sanções", icon: ShieldAlert, color: "text-amber-600 bg-amber-50 dark:bg-amber-950" },
-  { href: "/honorarios", label: "Honorários", icon: Landmark, color: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950" },
-  { href: "/faturas", label: "Faturas", icon: Receipt, color: "text-rose-600 bg-rose-50 dark:bg-rose-950" },
-  { href: "/reunioes", label: "Reuniões", icon: Globe, color: "text-cyan-600 bg-cyan-50 dark:bg-cyan-950" },
-  { href: "/processos", label: "Processos", icon: Scale, color: "text-purple-600 bg-purple-50 dark:bg-purple-950" },
-  { href: "/chat-equipe", label: "Chat da Equipe", icon: MessagesSquare, color: "text-neutral-600 bg-neutral-100 dark:bg-neutral-800" },
+  { href: "/crm", label: "CRM de Clientes", emoji: "👥" },
+  { href: "/whatsapp", label: "WhatsApp", emoji: "📱" },
+  { href: "/sancoes", label: "Sanções", emoji: "🛡️" },
+  { href: "/honorarios", label: "Honorários", emoji: "💱" },
+  { href: "/faturas", label: "Faturas", emoji: "🧾" },
+  { href: "/reunioes", label: "Reuniões", emoji: "🌐" },
+  { href: "/processos", label: "Processos", emoji: "⚖️" },
+  { href: "/chat-equipe", label: "Chat da Equipe", emoji: "💬" },
 ] as const;
 
 function timeOfDayGreeting() {
@@ -148,7 +142,6 @@ export function DashboardHome({
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {QUICK_LINKS.map((item) => {
-          const Icon = item.icon;
           return (
             <Link
               key={item.href}
@@ -158,8 +151,8 @@ export function DashboardHome({
               {item.href === "/whatsapp" && (
                 <span className={`absolute top-3 right-3 w-2 h-2 rounded-full ${whatsapp.color}`} />
               )}
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.color}`}>
-                <Icon size={20} strokeWidth={1.75} />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-neutral-100 dark:bg-neutral-800">
+                <span aria-hidden>{item.emoji}</span>
               </div>
               <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
                 {item.label}
