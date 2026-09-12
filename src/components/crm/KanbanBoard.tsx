@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { UserPlus, Rocket, Clock, CheckCircle2, ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
 import { CRM_STATUSES, nextCrmStatus, previousCrmStatus, formatDocument } from "@/lib/data/crm";
 import type { CrmClient } from "./types";
 
@@ -12,13 +13,32 @@ type Props = {
   onDelete: (id: string) => void;
 };
 
+const STATUS_ICONS: Record<string, LucideIcon> = {
+  CONTACTED: UserPlus,
+  INITIALIZED: Rocket,
+  IN_PROGRESS: Clock,
+  FINISHED: CheckCircle2,
+};
+
 export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props) {
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const toggleCollapsed = (status: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="flex flex-wrap items-start gap-4">
       {CRM_STATUSES.map((col) => {
         const columnClients = clients.filter((c) => c.status === col.value);
+        const isCollapsed = collapsed.has(col.value);
+        const Icon = STATUS_ICONS[col.value];
         return (
           <div
             key={col.value}
@@ -33,20 +53,48 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
               if (id) onStatusChange(id, col.value);
               setDragOverStatus(null);
             }}
-            className={`rounded-lg border p-3 space-y-3 min-h-[200px] transition-colors ${
+            className={`rounded-lg border p-3 min-h-[200px] transition-colors ${
+              isCollapsed ? "w-14 shrink-0 space-y-2" : "flex-1 min-w-[240px] space-y-3"
+            } ${
               dragOverStatus === col.value
                 ? "border-slate-500 bg-slate-50 dark:bg-slate-900/40"
                 : "border-neutral-200 dark:border-neutral-800"
             }`}
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{col.label}</h3>
-              <span className="text-xs bg-slate-800 text-white rounded-full px-2 py-0.5">
-                {columnClients.length}
-              </span>
-            </div>
+            {isCollapsed ? (
+              <button
+                onClick={() => toggleCollapsed(col.value)}
+                title={`Expandir "${col.label}"`}
+                className="flex flex-col items-center gap-2 w-full py-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              >
+                <ChevronRight size={14} />
+                <Icon size={18} strokeWidth={1.75} />
+                <span className="text-[11px] bg-slate-800 text-white rounded-full px-1.5 py-0.5">
+                  {columnClients.length}
+                </span>
+              </button>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icon size={16} strokeWidth={1.75} className="text-slate-400 shrink-0" />
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{col.label}</h3>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs bg-slate-800 text-white rounded-full px-2 py-0.5">
+                    {columnClients.length}
+                  </span>
+                  <button
+                    onClick={() => toggleCollapsed(col.value)}
+                    title={`Recolher "${col.label}"`}
+                    className="text-neutral-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
 
-            <div className="space-y-2">
+            {!isCollapsed && <div className="space-y-2">
               {columnClients.map((client) => {
                 const next = nextCrmStatus(client.status);
                 const prev = previousCrmStatus(client.status);
@@ -119,7 +167,7 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
               {columnClients.length === 0 && (
                 <p className="text-xs text-neutral-400 text-center py-4">Nenhum cliente aqui.</p>
               )}
-            </div>
+            </div>}
           </div>
         );
       })}
