@@ -11,20 +11,22 @@ import { WhatsappStatusDot } from "@/components/WhatsappStatusDot";
 
 const SIDEBAR_COLLAPSED_KEY = "hub-sidebar-collapsed";
 
+// Cada modulo tem um emoji dentro de um quadro (tile) colorido, tipo icone de
+// app - deixa facil reconhecer o modulo de relance, igual num celular.
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Início", emoji: "🏠" },
-  { href: "/crm", label: "CRM de Clientes", emoji: "👥" },
-  { href: "/processos", label: "Processos", emoji: "⚖️" },
-  { href: "/whatsapp", label: "WhatsApp", emoji: "📱", statusDot: true },
-  { href: "/chat-equipe", label: "Chat da Equipe", emoji: "💬" },
-  { href: "/sancoes", label: "Sanções (ONU/OFAC/UE)", emoji: "🛡️" },
-  { href: "/notificacoes", label: "Notificações", emoji: "🔔" },
-  { href: "/auditoria", label: "Auditoria", emoji: "📋" },
-  { href: "/honorarios", label: "Honorários & Câmbio", emoji: "💱", financeOnly: true },
-  { href: "/faturas", label: "Faturas", emoji: "🧾", financeOnly: true },
-  { href: "/relatorios", label: "Relatórios", emoji: "📊" },
-  { href: "/automacoes", label: "Automações", emoji: "⚡" },
-  { href: "/reunioes", label: "Reuniões & Fusos", emoji: "🌐" },
+  { href: "/dashboard", label: "Início", emoji: "🏠", tile: "bg-orange-500" },
+  { href: "/crm", label: "CRM de Clientes", emoji: "👥", tile: "bg-blue-500" },
+  { href: "/processos", label: "Processos", emoji: "⚖️", tile: "bg-fuchsia-500" },
+  { href: "/whatsapp", label: "WhatsApp", emoji: "📱", tile: "bg-green-500", statusDot: true },
+  { href: "/chat-equipe", label: "Chat da Equipe", emoji: "💬", tile: "bg-sky-500" },
+  { href: "/sancoes", label: "Sanções (ONU/OFAC/UE)", emoji: "🛡️", tile: "bg-red-500" },
+  { href: "/notificacoes", label: "Notificações", emoji: "🔔", tile: "bg-amber-500" },
+  { href: "/auditoria", label: "Auditoria", emoji: "📋", tile: "bg-slate-500" },
+  { href: "/honorarios", label: "Honorários & Câmbio", emoji: "💱", tile: "bg-emerald-500", financeOnly: true },
+  { href: "/faturas", label: "Faturas", emoji: "🧾", tile: "bg-rose-500", financeOnly: true },
+  { href: "/relatorios", label: "Relatórios", emoji: "📊", tile: "bg-indigo-500" },
+  { href: "/automacoes", label: "Automações", emoji: "⚡", tile: "bg-yellow-500" },
+  { href: "/reunioes", label: "Reuniões & Fusos", emoji: "🌐", tile: "bg-teal-500" },
 ];
 
 export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
@@ -73,43 +75,44 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
         />
       )}
       <aside
-        className={`shrink-0 min-h-screen flex flex-col bg-[#0e1b30] text-slate-300 fixed inset-y-0 left-0 z-50 transform transition-all duration-200 md:relative md:translate-x-0 md:z-auto ${
+        className={`shrink-0 flex flex-col bg-[#0e1b30] text-slate-300 fixed inset-y-0 left-0 z-50 overflow-y-auto transform transition-all duration-200 md:sticky md:top-0 md:h-screen md:translate-x-0 md:z-auto ${
           collapsed ? "w-20" : "w-64"
         } ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <button
-          onClick={toggleCollapsed}
-          title={collapsed ? "Expandir menu" : "Recolher menu"}
-          aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-          className="hidden md:flex items-center justify-center w-7 h-7 rounded-full bg-[#0e1b30] border border-white/15 text-slate-300 hover:bg-white/10 hover:text-white absolute -right-3 top-8 z-10 shadow-md"
-        >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
-
-        <div
-          className={`px-4 py-5 border-b border-white/10 flex items-center gap-3 ${
-            collapsed ? "flex-col text-center gap-2" : "md:flex-col md:text-center md:gap-2"
-          }`}
-        >
-          <Image src="/logo.png" alt="Internacional Hub" width={collapsed ? 40 : 56} height={collapsed ? 40 : 56} className="shrink-0" />
+        <div className="px-3 py-3 border-b border-white/10 flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="Internacional Hub"
+            width={collapsed ? 32 : 36}
+            height={collapsed ? 32 : 36}
+            className="shrink-0 rounded-md"
+          />
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <h1 className="text-base font-bold leading-tight text-white tracking-wide">
+              <h1 className="text-sm font-bold leading-tight text-white tracking-wide truncate">
                 INTERNACIONAL HUB
               </h1>
-              <p className="text-xs text-slate-400 mt-1">Sanções internacionais &amp; due diligence</p>
+              <p className="text-[11px] text-slate-400 truncate">Sanções &amp; due diligence</p>
             </div>
           )}
           <button
+            onClick={toggleCollapsed}
+            title={collapsed ? "Expandir menu" : "Recolher menu"}
+            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+            className="hidden md:flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:bg-white/10 hover:text-white shrink-0"
+          >
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+          <button
             onClick={onClose}
             aria-label="Fechar menu"
-            className="md:hidden p-1.5 rounded-xl text-slate-400 hover:bg-white/10 hover:text-white shrink-0"
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:bg-white/10 hover:text-white shrink-0"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-2 space-y-0.5">
           {NAV_ITEMS.filter((item) => !item.financeOnly || canViewFinance).map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             if (collapsed) {
@@ -120,13 +123,13 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
                   onClick={onClose}
                   title={item.label}
                   aria-label={item.label}
-                  className={`relative flex items-center justify-center w-11 h-11 mx-auto rounded-2xl text-lg transition-colors ${
-                    active ? "bg-blue-600" : "hover:bg-white/10"
+                  className={`relative flex items-center justify-center w-10 h-10 mx-auto rounded-xl text-lg transition-all ${item.tile} ${
+                    active ? "ring-2 ring-white/85" : "opacity-90 hover:opacity-100"
                   }`}
                 >
                   <span aria-hidden>{item.emoji}</span>
                   {item.statusDot && (
-                    <span className="absolute top-1.5 right-1.5">
+                    <span className="absolute -top-0.5 -right-0.5">
                       <WhatsappStatusDot />
                     </span>
                   )}
@@ -138,25 +141,31 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-sm font-medium transition-colors ${
                   active ? "bg-blue-600 text-white" : "text-slate-300 hover:bg-white/10 hover:text-white"
                 }`}
               >
-                <span className="text-base leading-none shrink-0" aria-hidden>{item.emoji}</span>
-                <span className="flex-1">{item.label}</span>
-                {item.statusDot && <WhatsappStatusDot />}
+                <span className={`relative flex items-center justify-center w-7 h-7 rounded-lg text-sm shrink-0 ${item.tile}`}>
+                  <span aria-hidden>{item.emoji}</span>
+                  {item.statusDot && (
+                    <span className="absolute -top-0.5 -right-0.5">
+                      <WhatsappStatusDot />
+                    </span>
+                  )}
+                </span>
+                <span className="flex-1 truncate">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
         {isAdmin && (
-          <div className="p-3 border-t border-white/10">
+          <div className="p-2 border-t border-white/10">
             <a
               href="/superadmin"
               title="ADM"
-              className={`flex items-center rounded-2xl text-sm font-medium bg-black border border-red-900 text-red-500 hover:bg-red-950 hover:text-red-400 transition-colors ${
-                collapsed ? "justify-center w-11 h-11 mx-auto text-lg" : "gap-3 px-3 py-2"
+              className={`flex items-center rounded-xl text-sm font-medium bg-black border border-red-900 text-red-500 hover:bg-red-950 hover:text-red-400 transition-colors ${
+                collapsed ? "justify-center w-10 h-10 mx-auto text-lg" : "gap-2.5 px-2 py-1.5"
               }`}
             >
               <span aria-hidden>🔒</span>
@@ -165,10 +174,10 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
           </div>
         )}
 
-        <div className="p-3 border-t border-white/10 space-y-1">
+        <div className="p-2 border-t border-white/10">
           <ThemeToggle collapsed={collapsed} />
         </div>
-        <div className="p-3 border-t border-white/10">
+        <div className="p-2 border-t border-white/10">
           <UserMenu collapsed={collapsed} />
         </div>
       </aside>
