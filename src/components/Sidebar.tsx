@@ -11,22 +11,24 @@ import { WhatsappStatusDot } from "@/components/WhatsappStatusDot";
 
 const SIDEBAR_COLLAPSED_KEY = "hub-sidebar-collapsed";
 
-// Cada modulo tem um emoji dentro de um quadro (tile) colorido, tipo icone de
-// app - deixa facil reconhecer o modulo de relance, igual num celular.
+// Quadro neutro (mesma cor discreta pra todos) por tras de cada emoji -
+// so pra emoldurar, sem pintar cada modulo de uma cor diferente.
+const TILE_CLASS = "bg-white/10";
+
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Início", emoji: "🏠", tile: "bg-orange-500" },
-  { href: "/crm", label: "CRM de Clientes", emoji: "👥", tile: "bg-blue-500" },
-  { href: "/processos", label: "Processos", emoji: "⚖️", tile: "bg-fuchsia-500" },
-  { href: "/whatsapp", label: "WhatsApp", emoji: "📱", tile: "bg-green-500", statusDot: true },
-  { href: "/chat-equipe", label: "Chat da Equipe", emoji: "💬", tile: "bg-sky-500" },
-  { href: "/sancoes", label: "Sanções (ONU/OFAC/UE)", emoji: "🛡️", tile: "bg-red-500" },
-  { href: "/notificacoes", label: "Notificações", emoji: "🔔", tile: "bg-amber-500" },
-  { href: "/auditoria", label: "Auditoria", emoji: "📋", tile: "bg-slate-500" },
-  { href: "/honorarios", label: "Honorários & Câmbio", emoji: "💱", tile: "bg-emerald-500", financeOnly: true },
-  { href: "/faturas", label: "Faturas", emoji: "🧾", tile: "bg-rose-500", financeOnly: true },
-  { href: "/relatorios", label: "Relatórios", emoji: "📊", tile: "bg-indigo-500" },
-  { href: "/automacoes", label: "Automações", emoji: "⚡", tile: "bg-yellow-500" },
-  { href: "/reunioes", label: "Reuniões & Fusos", emoji: "🌐", tile: "bg-teal-500" },
+  { href: "/dashboard", label: "Início", emoji: "🏠" },
+  { href: "/crm", label: "CRM de Clientes", emoji: "👥" },
+  { href: "/processos", label: "Processos", emoji: "⚖️" },
+  { href: "/whatsapp", label: "WhatsApp", emoji: "📱", statusDot: true },
+  { href: "/chat-equipe", label: "Chat da Equipe", emoji: "💬" },
+  { href: "/sancoes", label: "Sanções (ONU/OFAC/UE)", emoji: "🛡️" },
+  { href: "/notificacoes", label: "Notificações", emoji: "🔔" },
+  { href: "/auditoria", label: "Auditoria", emoji: "📋" },
+  { href: "/honorarios", label: "Honorários & Câmbio", emoji: "💱", financeOnly: true },
+  { href: "/faturas", label: "Faturas", emoji: "🧾", financeOnly: true },
+  { href: "/relatorios", label: "Relatórios", emoji: "📊" },
+  { href: "/automacoes", label: "Automações", emoji: "⚡" },
+  { href: "/reunioes", label: "Reuniões & Fusos", emoji: "🌐" },
 ];
 
 export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
@@ -123,7 +125,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
                   onClick={onClose}
                   title={item.label}
                   aria-label={item.label}
-                  className={`relative flex items-center justify-center w-10 h-10 mx-auto rounded-xl text-lg transition-all ${item.tile} ${
+                  className={`relative flex items-center justify-center w-10 h-10 mx-auto rounded-xl text-lg transition-all ${TILE_CLASS} ${
                     active ? "ring-2 ring-white/85" : "opacity-90 hover:opacity-100"
                   }`}
                 >
@@ -145,7 +147,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
                   active ? "bg-blue-600 text-white" : "text-slate-300 hover:bg-white/10 hover:text-white"
                 }`}
               >
-                <span className={`relative flex items-center justify-center w-7 h-7 rounded-lg text-sm shrink-0 ${item.tile}`}>
+                <span className={`relative flex items-center justify-center w-7 h-7 rounded-lg text-sm shrink-0 ${TILE_CLASS}`}>
                   <span aria-hidden>{item.emoji}</span>
                   {item.statusDot && (
                     <span className="absolute -top-0.5 -right-0.5">
