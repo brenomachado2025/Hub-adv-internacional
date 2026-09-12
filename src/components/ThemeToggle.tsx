@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sun, Moon } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
-export function ThemeToggle() {
+export function ThemeToggle({ collapsed = false }: { collapsed?: boolean }) {
   const showToast = useToast();
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -62,15 +61,30 @@ export function ThemeToggle() {
     return <div className="h-9" aria-hidden />;
   }
 
+  if (collapsed) {
+    return (
+      <button
+        onClick={toggle}
+        role="switch"
+        aria-checked={isDark}
+        title={isDark ? "Modo escuro" : "Modo claro"}
+        aria-label={isDark ? "Modo escuro" : "Modo claro"}
+        className="flex items-center justify-center w-11 h-11 mx-auto rounded-2xl text-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
+      >
+        <span aria-hidden>{isDark ? "🌙" : "☀️"}</span>
+      </button>
+    );
+  }
+
   return (
     <button
       onClick={toggle}
       role="switch"
       aria-checked={isDark}
-      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
+      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
     >
       <span className="flex items-center gap-3">
-        {isDark ? <Moon size={18} strokeWidth={1.75} /> : <Sun size={18} strokeWidth={1.75} />}
+        <span aria-hidden>{isDark ? "🌙" : "☀️"}</span>
         {isDark ? "Modo escuro" : "Modo claro"}
       </span>
       <span
