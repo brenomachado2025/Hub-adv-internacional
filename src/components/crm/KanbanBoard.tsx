@@ -75,8 +75,8 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
               if (id) onStatusChange(id, col.value);
               setDragOverStatus(null);
             }}
-            className={`rounded-lg border p-3 min-h-[200px] transition-colors ${
-              isCollapsed ? "w-14 shrink-0 space-y-2" : "flex-1 min-w-[240px] space-y-3"
+            className={`rounded-2xl border p-3 min-h-[200px] transition-colors ${
+              isCollapsed ? "w-16 shrink-0 space-y-2" : "flex-1 min-w-[240px] space-y-3"
             } ${
               dragOverStatus === col.value
                 ? "border-slate-500 bg-slate-50 dark:bg-slate-900/40"
@@ -84,17 +84,20 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
             }`}
           >
             {isCollapsed ? (
-              <button
-                onClick={() => toggleCollapsed(col.value)}
-                title={`Expandir "${col.label}"`}
-                className="flex flex-col items-center gap-2 w-full py-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-              >
-                <ChevronRight size={14} />
-                <span className="text-xl leading-none" aria-hidden>{style.emoji}</span>
+              <div className="flex flex-col items-center gap-2 py-1">
+                <span className="text-2xl leading-none" aria-hidden>{style.emoji}</span>
                 <span className={`text-[11px] text-white rounded-full px-1.5 py-0.5 ${style.badge}`}>
                   {columnClients.length}
                 </span>
-              </button>
+                <button
+                  onClick={() => toggleCollapsed(col.value)}
+                  title={`Abrir "${col.label}"`}
+                  aria-label={`Abrir "${col.label}"`}
+                  className="flex items-center justify-center w-8 h-8 rounded-full border border-neutral-300 dark:border-neutral-700 bg-white/70 dark:bg-neutral-900/70 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-neutral-900"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             ) : (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
@@ -108,9 +111,10 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                   <button
                     onClick={() => toggleCollapsed(col.value)}
                     title={`Recolher "${col.label}"`}
-                    className="text-neutral-400 hover:text-slate-700 dark:hover:text-slate-200"
+                    aria-label={`Recolher "${col.label}"`}
+                    className="flex items-center justify-center w-7 h-7 rounded-full border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-neutral-900"
                   >
-                    <ChevronLeft size={16} />
+                    <ChevronLeft size={14} />
                   </button>
                 </div>
               </div>
@@ -127,18 +131,18 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                     onDragStart={(e) => {
                       e.dataTransfer.setData("text/client-id", client.id);
                     }}
-                    className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 shadow-sm cursor-grab active:cursor-grabbing"
+                    className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 shadow-sm cursor-grab active:cursor-grabbing"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <Link href={`/crm/${client.id}`} className="text-sm font-medium text-left hover:underline">
                         {client.fullName}
                       </Link>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => onEdit(client)}
                           aria-label="Editar rápido"
                           title="Editar rápido"
-                          className="text-neutral-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs"
+                          className="flex items-center justify-center w-6 h-6 rounded-full text-neutral-400 hover:text-slate-700 hover:bg-neutral-100 dark:hover:text-slate-200 dark:hover:bg-neutral-800 text-xs"
                         >
                           ✎
                         </button>
@@ -146,7 +150,7 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                           onClick={() => onDelete(client.id)}
                           aria-label="Excluir cliente"
                           title="Excluir"
-                          className="text-neutral-400 hover:text-red-600 text-xs"
+                          className="flex items-center justify-center w-6 h-6 rounded-full text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs"
                         >
                           ✕
                         </button>
@@ -169,7 +173,7 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                         onClick={() => prev && onStatusChange(client.id, prev)}
                         aria-label="Voltar etapa"
                         title="Voltar etapa"
-                        className="text-xs px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 disabled:opacity-30"
+                        className="text-xs px-2.5 py-1 rounded-full border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:hover:bg-transparent"
                       >
                         ←
                       </button>
@@ -178,7 +182,7 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                         onClick={() => next && onStatusChange(client.id, next)}
                         aria-label="Avançar etapa"
                         title="Avançar etapa"
-                        className="text-xs px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 disabled:opacity-30"
+                        className="text-xs px-2.5 py-1 rounded-full border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:hover:bg-transparent"
                       >
                         →
                       </button>
