@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { UserPlus, Rocket, Clock, CheckCircle2, ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CRM_STATUSES, nextCrmStatus, previousCrmStatus, formatDocument } from "@/lib/data/crm";
 import type { CrmClient } from "./types";
 
@@ -13,11 +13,33 @@ type Props = {
   onDelete: (id: string) => void;
 };
 
-const STATUS_ICONS: Record<string, LucideIcon> = {
-  CONTACTED: UserPlus,
-  INITIALIZED: Rocket,
-  IN_PROGRESS: Clock,
-  FINISHED: CheckCircle2,
+// Cada etapa tem um emoji e uma cor de destaque proprios, pra diferenciar as
+// colunas de relance mesmo recolhidas (so o retangulo colorido + emoji).
+const STATUS_STYLE: Record<string, { emoji: string; border: string; bg: string; badge: string }> = {
+  CONTACTED: {
+    emoji: "📞",
+    border: "border-blue-200 dark:border-blue-900/60",
+    bg: "bg-blue-50/60 dark:bg-blue-950/20",
+    badge: "bg-blue-600",
+  },
+  INITIALIZED: {
+    emoji: "🚀",
+    border: "border-violet-200 dark:border-violet-900/60",
+    bg: "bg-violet-50/60 dark:bg-violet-950/20",
+    badge: "bg-violet-600",
+  },
+  IN_PROGRESS: {
+    emoji: "⏳",
+    border: "border-amber-200 dark:border-amber-900/60",
+    bg: "bg-amber-50/60 dark:bg-amber-950/20",
+    badge: "bg-amber-600",
+  },
+  FINISHED: {
+    emoji: "✅",
+    border: "border-emerald-200 dark:border-emerald-900/60",
+    bg: "bg-emerald-50/60 dark:bg-emerald-950/20",
+    badge: "bg-emerald-600",
+  },
 };
 
 export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props) {
@@ -38,7 +60,7 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
       {CRM_STATUSES.map((col) => {
         const columnClients = clients.filter((c) => c.status === col.value);
         const isCollapsed = collapsed.has(col.value);
-        const Icon = STATUS_ICONS[col.value];
+        const style = STATUS_STYLE[col.value];
         return (
           <div
             key={col.value}
@@ -58,7 +80,7 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
             } ${
               dragOverStatus === col.value
                 ? "border-slate-500 bg-slate-50 dark:bg-slate-900/40"
-                : "border-neutral-200 dark:border-neutral-800"
+                : `${style.border} ${style.bg}`
             }`}
           >
             {isCollapsed ? (
@@ -68,19 +90,19 @@ export function KanbanBoard({ clients, onStatusChange, onEdit, onDelete }: Props
                 className="flex flex-col items-center gap-2 w-full py-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               >
                 <ChevronRight size={14} />
-                <Icon size={18} strokeWidth={1.75} />
-                <span className="text-[11px] bg-slate-800 text-white rounded-full px-1.5 py-0.5">
+                <span className="text-xl leading-none" aria-hidden>{style.emoji}</span>
+                <span className={`text-[11px] text-white rounded-full px-1.5 py-0.5 ${style.badge}`}>
                   {columnClients.length}
                 </span>
               </button>
             ) : (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Icon size={16} strokeWidth={1.75} className="text-slate-400 shrink-0" />
+                  <span className="text-base leading-none shrink-0" aria-hidden>{style.emoji}</span>
                   <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{col.label}</h3>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs bg-slate-800 text-white rounded-full px-2 py-0.5">
+                  <span className={`text-xs text-white rounded-full px-2 py-0.5 ${style.badge}`}>
                     {columnClients.length}
                   </span>
                   <button
