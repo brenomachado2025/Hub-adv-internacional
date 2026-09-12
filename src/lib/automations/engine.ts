@@ -66,7 +66,9 @@ export async function runClientCreatedAutomations(workspaceUserId: string, clien
     where: { userId: workspaceUserId, enabled: true, triggerType: "CLIENT_CREATED" },
   });
   for (const rule of rules) {
-    await runAction(rule, client, workspaceUserId).catch(() => {});
+    await runAction(rule, client, workspaceUserId).catch((err) => {
+      console.error(`[automations] falha ao executar regra ${rule.id} (${rule.actionType}):`, err);
+    });
   }
 }
 
@@ -80,6 +82,8 @@ export async function runClientStatusChangedAutomations(workspaceUserId: string,
     },
   });
   for (const rule of rules) {
-    await runAction(rule, client, workspaceUserId).catch(() => {});
+    await runAction(rule, client, workspaceUserId).catch((err) => {
+      console.error(`[automations] falha ao executar regra ${rule.id} (${rule.actionType}):`, err);
+    });
   }
 }

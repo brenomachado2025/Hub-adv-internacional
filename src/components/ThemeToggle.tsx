@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
+import { useToast } from "@/components/Toast";
 
 export function ThemeToggle() {
+  const showToast = useToast();
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -46,7 +48,13 @@ export function ThemeToggle() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ theme: next ? "dark" : "light" }),
-    }).catch(() => {});
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+      })
+      .catch(() => {
+        showToast("Não foi possível salvar a preferência de tema nesta conta.", "error");
+      });
   };
 
   // Evita divergência entre o que o servidor renderiza e o tema já aplicado pelo script inline.

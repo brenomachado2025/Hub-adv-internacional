@@ -26,46 +26,52 @@ export async function checkLegalDeadlines(): Promise<void> {
   const now = Date.now();
 
   for (const deadline of pending) {
-    const daysRemaining = Math.ceil((deadline.dueDate.getTime() - now) / MS_PER_DAY);
+    // Isola cada prazo - se um falhar (ex.: erro transitório de banco), os
+    // demais prazos do mesmo lote continuam sendo verificados normalmente.
+    try {
+      const daysRemaining = Math.ceil((deadline.dueDate.getTime() - now) / MS_PER_DAY);
 
-    if (daysRemaining < 0) {
-      await prisma.legalCaseDeadline.update({ where: { id: deadline.id }, data: { status: "EXPIRED" } });
-      continue;
+      if (daysRemaining < 0) {
+        await prisma.legalCaseDeadline.update({ where: { id: deadline.id }, data: { status: "EXPIRED" } });
+        continue;
+      }
+
+      const thresholds = parseAlertDays(deadline.alertDays);
+      const alreadySent: number[] = JSON.parse(deadline.alertsSent || "[]");
+      const dueThreshold = thresholds.find((t) => daysRemaining <= t && !alreadySent.includes(t));
+      if (dueThreshold === undefined) continue;
+
+      await prisma.notification.create({
+        data: {
+          userId: deadline.case.userId,
+          type: "SYSTEM",
+          sender: "Prazos Processuais",
+          subject: `Prazo vence em ${daysRemaining} dia(s): ${deadline.title}`,
+          body: `Processo "${deadline.case.title}" (${deadline.case.caseNumber || "sem número"}) do cliente ${deadline.case.client.fullName} — prazo "${deadline.title}" vence em ${deadline.dueDate.toLocaleDateString("pt-BR")}.`,
+        },
+      });
+
+      await prisma.crmActivity.create({
+        data: {
+          clientId: deadline.case.clientId,
+          type: "DEADLINE_ALERT",
+          description: `Alerta de prazo: "${deadline.title}" vence em ${daysRemaining} dia(s)`,
+          actor: "sistema",
+        },
+      });
+
+      await sendPushToUser(deadline.case.userId, {
+        title: `Prazo vence em ${daysRemaining} dia(s)`,
+        body: `${deadline.title} — ${deadline.case.client.fullName}`,
+        url: `/crm/${deadline.case.clientId}`,
+      });
+
+      await prisma.legalCaseDeadline.update({
+        where: { id: deadline.id },
+        data: { alertsSent: JSON.stringify([...alreadySent, dueThreshold]) },
+      });
+    } catch (err) {
+      console.error(`[checkLegalDeadlines] falha ao processar prazo ${deadline.id}:`, err);
     }
-
-    const thresholds = parseAlertDays(deadline.alertDays);
-    const alreadySent: number[] = JSON.parse(deadline.alertsSent || "[]");
-    const dueThreshold = thresholds.find((t) => daysRemaining <= t && !alreadySent.includes(t));
-    if (dueThreshold === undefined) continue;
-
-    await prisma.notification.create({
-      data: {
-        userId: deadline.case.userId,
-        type: "SYSTEM",
-        sender: "Prazos Processuais",
-        subject: `Prazo vence em ${daysRemaining} dia(s): ${deadline.title}`,
-        body: `Processo "${deadline.case.title}" (${deadline.case.caseNumber || "sem número"}) do cliente ${deadline.case.client.fullName} — prazo "${deadline.title}" vence em ${deadline.dueDate.toLocaleDateString("pt-BR")}.`,
-      },
-    });
-
-    await prisma.crmActivity.create({
-      data: {
-        clientId: deadline.case.clientId,
-        type: "DEADLINE_ALERT",
-        description: `Alerta de prazo: "${deadline.title}" vence em ${daysRemaining} dia(s)`,
-        actor: "sistema",
-      },
-    });
-
-    await sendPushToUser(deadline.case.userId, {
-      title: `Prazo vence em ${daysRemaining} dia(s)`,
-      body: `${deadline.title} — ${deadline.case.client.fullName}`,
-      url: `/crm/${deadline.case.clientId}`,
-    });
-
-    await prisma.legalCaseDeadline.update({
-      where: { id: deadline.id },
-      data: { alertsSent: JSON.stringify([...alreadySent, dueThreshold]) },
-    });
   }
 }

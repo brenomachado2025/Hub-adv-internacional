@@ -33,7 +33,7 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY &&
 // Mesma lógica de src/lib/push.ts, duplicada aqui porque este script roda fora do
 // bundle do Next (node puro, sem alias @/) e não importa código de src/.
 async function sendPush(userId, payload) {
-  if (!process.env.VAPID_PRIVATE_KEY) return;
+  if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY || !process.env.VAPID_SUBJECT) return;
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
   await Promise.all(
     subs.map(async (sub) => {

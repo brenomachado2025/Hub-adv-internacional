@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendEmailBatch, emailTemplate } from "@/lib/email";
+import { sendEmailBatch, emailTemplate, escapeHtml } from "@/lib/email";
 
 const GENERIC_MESSAGE = "Se esse e-mail existir na nossa base, um código de verificação foi enviado.";
 
@@ -22,6 +22,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, message: GENERIC_MESSAGE });
   }
 
+  // Limite de 1 código a cada 60s por conta - evita "e-mail bombing" via pedidos
+  // repetidos. Resposta continua genérica pra não vazar que a conta existe.
+  const recentToken = await prisma.passwordResetToken.findFirst({
+    where: { userId: user.id, createdAt: { gt: new Date(Date.now() - 60 * 1000) } },
+    orderBy: { createdAt: "desc" },
+  });
+  if (recentToken) {
+    return NextResponse.json({ ok: true, message: GENERIC_MESSAGE });
+  }
+
+  // Só o código mais recente deve valer - invalida qualquer código anterior ainda
+  // não usado pra não deixar códigos antigos "vivos" indefinidamente.
+  await prisma.passwordResetToken.updateMany({
+    where: { userId: user.id, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+
   const code = generateCode();
   await prisma.passwordResetToken.create({
     data: {
@@ -37,7 +54,7 @@ export async function POST(req: NextRequest) {
         to: user.email,
         subject: "Código para redefinir sua senha - Internacional Hub",
         html: emailTemplate(`
-          <p>Olá${user.name ? `, ${user.name}` : ""}!</p>
+          <p>Olá${user.name ? `, ${escapeHtml(user.name)}` : ""}!</p>
           <p>Recebemos um pedido para redefinir a senha da sua conta no Internacional Hub.</p>
           <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 24px 0; text-align: center;">${code}</p>
           <p>Esse código vale por 15 minutos. Se você não pediu essa redefinição, pode ignorar este e-mail.</p>

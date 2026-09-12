@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getWorkspaceOwnerId } from "@/lib/team";
+import { onlyDigits } from "@/lib/data/crm";
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
         userId: workspaceUserId,
         OR: [
           { fullName: { contains: q, mode: "insensitive" } },
-          { documentNumber: { contains: q, mode: "insensitive" } },
+          { documentNumber: { contains: onlyDigits(q) || q } },
           { email: { contains: q, mode: "insensitive" } },
           { companyName: { contains: q, mode: "insensitive" } },
         ],

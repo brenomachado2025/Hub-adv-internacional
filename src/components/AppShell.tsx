@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-h-full flex">
         <Sidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-20 flex items-center justify-between md:justify-end gap-2 sm:gap-4 px-4 sm:px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+          <header className="sticky top-0 z-40 flex items-center justify-between md:justify-end gap-2 sm:gap-4 px-4 sm:px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
             <button
               onClick={() => setMobileNavOpen(true)}
               aria-label="Abrir menu"

@@ -16,11 +16,16 @@ export async function GET(req: NextRequest) {
 
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
+  const deniedReason = req.nextUrl.searchParams.get("error");
   const expectedState = req.cookies.get("google_oauth_state")?.value;
   const next = req.cookies.get("google_oauth_next")?.value || "/dashboard";
 
+  if (deniedReason) {
+    loginUrl.searchParams.set("error", "Login com Google cancelado.");
+    return NextResponse.redirect(loginUrl);
+  }
   if (!code || !state || !expectedState || state !== expectedState) {
-    loginUrl.searchParams.set("error", "Falha na verificação do login com Google. Tente novamente.");
+    loginUrl.searchParams.set("error", "Sessão de login expirada. Tente novamente.");
     return NextResponse.redirect(loginUrl);
   }
 
@@ -68,14 +73,25 @@ export async function GET(req: NextRequest) {
         user = await prisma.user.update({ where: { id: user.id }, data: { googleId: profile.sub } });
       } else {
         const randomPassword = await hashPassword(crypto.randomUUID() + crypto.randomUUID());
-        user = await prisma.user.create({
-          data: {
-            email,
-            name: profile.name ?? "",
-            passwordHash: randomPassword,
-            googleId: profile.sub,
-          },
-        });
+        try {
+          user = await prisma.user.create({
+            data: {
+              email,
+              name: profile.name ?? "",
+              passwordHash: randomPassword,
+              googleId: profile.sub,
+            },
+          });
+        } catch (err) {
+          // Corrida: duas abas fazendo o primeiro login com o mesmo e-mail ao
+          // mesmo tempo - a segunda esbarra na constraint única de e-mail/googleId.
+          // Em vez de quebrar, busca a conta que a outra requisição acabou de criar.
+          const isUniqueConstraint =
+            typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === "P2002";
+          if (!isUniqueConstraint) throw err;
+          user = await prisma.user.findUnique({ where: { email } });
+          if (!user) throw err;
+        }
       }
     }
 

@@ -25,11 +25,11 @@ export async function POST(req: NextRequest) {
   }
 
   const token = await prisma.passwordResetToken.findFirst({
-    where: { userId: user.id, usedAt: null },
+    where: { userId: user.id, usedAt: null, expiresAt: { gt: new Date() } },
     orderBy: { createdAt: "desc" },
   });
 
-  if (!token || token.expiresAt < new Date()) {
+  if (!token) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 400 });
   }
   if (token.attempts >= MAX_ATTEMPTS) {
@@ -37,7 +37,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (token.code !== code.trim()) {
-    await prisma.passwordResetToken.update({ where: { id: token.id }, data: { attempts: { increment: 1 } } });
+    // updateMany com o filtro de tentativas no WHERE torna o check-e-incrementa
+    // atômico (uma única instrução no banco), evitando que requisições paralelas
+    // ultrapassem o limite de tentativas por corrida.
+    await prisma.passwordResetToken.updateMany({
+      where: { id: token.id, attempts: { lt: MAX_ATTEMPTS } },
+      data: { attempts: { increment: 1 } },
+    });
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 400 });
   }
 

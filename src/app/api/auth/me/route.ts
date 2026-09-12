@@ -42,7 +42,10 @@ export async function PATCH(req: NextRequest) {
   if (typeof theme === "string" && ["light", "dark", "system"].includes(theme)) data.theme = theme;
   if (avatarUrl === null) data.avatarUrl = "";
   if (typeof avatarUrl === "string" && avatarUrl) {
-    if (avatarUrl.length > MAX_AVATAR_LENGTH || !avatarUrl.startsWith("data:image/")) {
+    // Allowlist explícita de formatos rasterizados - exclui data:image/svg+xml,
+    // que pode carregar <script> e rodar no navegador de quem visualiza a foto.
+    const isAllowedImage = /^data:image\/(png|jpeg|jpg|webp);base64,/.test(avatarUrl);
+    if (avatarUrl.length > MAX_AVATAR_LENGTH || !isAllowedImage) {
       return NextResponse.json({ error: "Imagem inválida ou muito grande" }, { status: 400 });
     }
     data.avatarUrl = avatarUrl;

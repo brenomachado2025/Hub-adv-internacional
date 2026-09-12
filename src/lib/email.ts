@@ -8,6 +8,17 @@ const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL || "Internacional Hub <onboar
 // pública. Usa o domínio de produção do próprio Hub, que já serve essa imagem.
 const LOGO_URL = "https://hubadvinternacional2027.vercel.app/logo.png";
 
+// Escapa texto vindo de usuário (nome, mensagem de campanha) antes de interpolar
+// em HTML de e-mail - evita que alguém injete tags/scripts no corpo enviado.
+export function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Cabeçalho/rodapé padrão com o logo do Hub, reaproveitado em todo e-mail
 // transacional (recuperação de senha, e-mail em massa, etc.) para manter a
 // identidade visual consistente.

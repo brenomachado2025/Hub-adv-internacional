@@ -19,6 +19,7 @@ export function CommandPalette() {
   const [results, setResults] = useState<Results>(EMPTY);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -51,12 +52,22 @@ export function CommandPalette() {
       return;
     }
     setLoading(true);
+    const requestId = ++requestIdRef.current;
     const timeout = setTimeout(() => {
       fetch(`/api/search?q=${encodeURIComponent(query.trim())}`)
         .then((res) => (res.ok ? res.json() : EMPTY))
-        .then(setResults)
-        .catch(() => setResults(EMPTY))
-        .finally(() => setLoading(false));
+        .then((data) => {
+          // Ignora respostas de buscas anteriores que chegaram fora de ordem -
+          // sem isso, uma resposta lenta de uma letra digitada antes podia
+          // sobrescrever o resultado (já correto) de uma busca mais recente.
+          if (requestId === requestIdRef.current) setResults(data);
+        })
+        .catch(() => {
+          if (requestId === requestIdRef.current) setResults(EMPTY);
+        })
+        .finally(() => {
+          if (requestId === requestIdRef.current) setLoading(false);
+        });
     }, 250);
     return () => clearTimeout(timeout);
   }, [query, open]);
